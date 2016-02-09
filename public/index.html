@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>chat</title>
+    <style>
+      .box{
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        height: 10px;
+        width: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      var socket = io();
+
+      keyPress=[];
+      $('body').on('keydown', function(e){
+        keyPress[e.keyCode] = true;
+      });
+
+      $('body').on('keyup', function(e){
+        delete keyPress[e.keyCode];
+      });
+
+      var intervarl = setInterval(function(){
+        socket.emit('keyStatusUpdate', keyPress)
+      },20);
+
+      socket.on('update', function(idArray, statusArray){
+        idArray.forEach(function(id,i,a){
+          var target = id.slice(1,id.length);
+          if($(target).length == 0){
+            var newBox = document.createElement("div");
+            $(newBox).attr('id', id.slice(2,id.length));
+            $(newBox).addClass("box");
+            $(newBox).css("background-color",statusArray[id].color);
+            $(newBox).css("left",statusArray[id].x);
+            $(newBox).css("top",statusArray[id].y);
+            $("body").append($(newBox));
+          }
+          $(target).css("background-color",statusArray[id].color);
+          $(target).css("left",statusArray[id].x);
+          $(target).css("top",statusArray[id].y);
+        });
+      });
+      socket.on('create', function(id,object){
+        var newBox = document.createElement("div");
+        $(newBox).attr('id', id.slice(3,id.length-1));
+        $(newBox).addClass("box");
+        $(newBox).css("background-color",object.color);
+        $(newBox).css("left",object.x);
+        $(newBox).css("top",object.y);
+        $("body").append($(newBox));
+
+      });
+      socket.on('disconnect', function(id){
+        var target = id.slice(1,id.length);
+        $(target).remove();
+      });
+    </script>
+  </body>
+</html>
