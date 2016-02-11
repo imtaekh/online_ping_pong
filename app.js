@@ -8,20 +8,18 @@ app.use(express.static(path.join(__dirname,"public")));
 
 var port = process.env.PORT || 3000;
 http.listen(port, function(){
-  console.log("server on!");
+  console.log("server on!: http://localhost:3000/");
 });
 
-keyPress=[];
-objects={};
+var objects = {};
 
 io.on('connection', function(socket){
   console.log('user connected: ', socket.id);
-
   objects[socket.id] = new UserObject();
+  io.to(socket.id).emit('connected', GAME_SETTINGS);
 
   socket.on('disconnect', function(){
     delete objects[socket.id];
-    io.emit('disconnect',socket.id);
     console.log('user disconnected: ', socket.id);
   });
   socket.on('keydown', function(keyCode){
@@ -33,6 +31,9 @@ io.on('connection', function(socket){
 });
 
 var LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40;
+var GAME_SETTINGS = {
+  WIDTH : 600, HEIGHT : 400, BACKGROUND_COLOR : "#FFFFFF"
+};
 
 var update = setInterval(function(){
   var idArray=[];
