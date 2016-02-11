@@ -11,7 +11,7 @@
       var socket = io();
 
       $('body').on('keydown', function(e){
-          socket.emit('keydown', e.keyCode)
+        socket.emit('keydown', e.keyCode)
       });
       $('body').on('keyup', function(e){
         socket.emit('keyup', e.keyCode)

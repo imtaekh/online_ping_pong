@@ -24,7 +24,6 @@ io.on('connection', function(socket){
     io.emit('disconnect',socket.id);
     console.log('user disconnected: ', socket.id);
   });
-
   socket.on('keydown', function(keyCode){
     objects[socket.id].keypress[keyCode]=true;
   });
