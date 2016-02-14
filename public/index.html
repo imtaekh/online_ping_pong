@@ -30,12 +30,12 @@
         $(canvas).attr("height", GAME_SETTINGS.HEIGHT);
         document.body.appendChild(canvas);
       });
-      socket.on('update', function(idArray, statusArray){
+      socket.on('update', function(statuses){
         if(GAME_SETTINGS == null) return;
         drawBackground();
-        idArray.forEach(function(id,i,a){
-          ctx.fillStyle = statusArray[id].color;
-          ctx.fillRect(statusArray[id].x,statusArray[id].y,statusArray[id].width,statusArray[id].height);
+        statuses.forEach(function(status){
+          ctx.fillStyle = status.color;
+          ctx.fillRect(status.x,status.y,status.width,status.height);
         });
       });
 
@@ -43,6 +43,14 @@
         ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
         ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
       }
+
+      socket.on('waiting', function(){
+        console.log("I'm waiting!");
+      });
+
+      socket.on('in', function(){
+        console.log("I'm in!");
+      });
     })
     </script>
   </body>

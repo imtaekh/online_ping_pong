@@ -12,15 +12,28 @@ http.listen(port, function(){
 });
 
 var objects = {};
+var rooms = [];
+var lobbyManager = new (require('./gameObjects/LobbyManager.js'))(io);
+// console.log(lobby);
 
 io.on('connection', function(socket){
+
   console.log('user connected: ', socket.id);
-  objects[socket.id] = new UserObject();
-  io.to(socket.id).emit('connected', GAME_SETTINGS);
+//  console.log('$  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $  $\n', socket);
+
+  var found = findRoom(socket);
+  if(!found){
+    lobbyManager.dispatch();
+  }
+
+  objects[socket.id] = new Obj();
+  io.to(socket.id).emit('connected', SETTINGS);
 
   socket.on('disconnect', function(){
     delete objects[socket.id];
+    lobbyManager.kick(socket);
     console.log('user disconnected: ', socket.id);
+    //console.log(socket);
   });
   socket.on('keydown', function(keyCode){
     objects[socket.id].keypress[keyCode]=true;
@@ -31,27 +44,48 @@ io.on('connection', function(socket){
 });
 
 var LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40;
-var GAME_SETTINGS = {
+var UNIT = 2;
+var INTERVAL = 10;
+var SETTINGS = {
   WIDTH : 600, HEIGHT : 400, BACKGROUND_COLOR : "#FFFFFF"
 };
 
 var update = setInterval(function(){
-  var idArray=[];
-  var statusArray={};
+  var statuses = [];
   for(var id in io.sockets.clients().connected){
-    if(objects[id].keypress[LEFT])  objects[id].status.x -= 2;
-    if(objects[id].keypress[UP])    objects[id].status.y -= 2;
-    if(objects[id].keypress[RIGHT]) objects[id].status.x += 2;
-    if(objects[id].keypress[DOWN])  objects[id].status.y += 2;
+    var obj = objects[id];
+    if(obj.keypress[LEFT] && obj.status.x - UNIT >= 0)
+      obj.status.x -= UNIT;
+    if(obj.keypress[UP] && obj.status.y - UNIT >= 0)
+      obj.status.y -= UNIT;
+    if(obj.keypress[RIGHT] && obj.status.x + obj.status.width + UNIT <= SETTINGS.WIDTH)
+      obj.status.x += UNIT;
+    if(obj.keypress[DOWN] && obj.status.y + obj.status.height + UNIT <= SETTINGS.HEIGHT)
+      obj.status.y += UNIT;
 
-    idArray.push(id);
-    statusArray[id]=objects[id].status;
+    statuses.push(obj.status);
   }
-  io.emit('update',idArray, statusArray);
-},10);
+  io.emit('update',statuses);
+},INTERVAL);
 
-function UserObject() {
-  var color="#";
+function findRoom (socket){
+  var entered = false;
+  rooms.some(function(room, num){
+    if(room.status == "waiting" && room.player.length<2){
+      room.player[length] = socket.id;
+      entered = true;
+      return true;
+    }
+  });
+  if(!entered){
+    lobbyManager.push(socket);
+    io.to(socket.id).emit('waiting');
+  }
+  return entered;
+}
+
+function Obj() {
+  var color = "#";
   for(var i = 0; i < 6; i++ ){
     color += (Math.floor(Math.random()*16)).toString(16);
   }
@@ -62,4 +96,10 @@ function UserObject() {
   this.status.width = 20;
   this.status.color = color;
   this.keypress = [];
+}
+
+function Room(num) {
+  this.num = num;
+  this.status = "waiting";
+  this.player = [];
 }
