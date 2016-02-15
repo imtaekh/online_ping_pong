@@ -9,7 +9,7 @@ function RoomManager(io, SETTINGS){
     socket1.join(roomNum);
     io.to(roomNum).emit("in");
     RmMg.rooms.push(room);
-    console.log(RmMg.rooms);
+    console.log("Room Created :", roomNum);
   };
   RmMg.findRoomIndex = function(socket){
     var roomIndex = null;
