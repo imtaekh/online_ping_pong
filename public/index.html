@@ -31,6 +31,7 @@
         document.body.appendChild(canvas);
       });
       socket.on('update', function(statuses){
+        
         if(GAME_SETTINGS == null) return;
         drawBackground();
         statuses.forEach(function(status){

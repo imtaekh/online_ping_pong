@@ -24,19 +24,15 @@ function LobbyManager(io){
   };
 
   //Make rooms for users in lobby
-  LbMg.dispatch = function(){
+  LbMg.dispatch = function(RmMg){
     if(LbMg.dispatching) return;
     LbMg.dispatching = true;
-    if(LbMg.lobby.length > 1){
-      LbMg.lobby.forEach(function(socket){
-        if(socket.connected){
-          socket.join("room");
-        }
-        LbMg.lobby[LbMg.lobby.indexOf(socket)] = null;
-      });
-      LbMg.clean();
-      console.log(LbMg.lobby.length);
-      io.to("room").emit('in');
+
+    while(LbMg.lobby.length > 1){
+      var player0 = LbMg.lobby.splice(0,1);
+      var player1 = LbMg.lobby.splice(0,1);
+      //console.log("player0: ,player0);
+      RmMg.create(player0[0],player1[0]);
     }
     LbMg.dispatching = false;
   };
