@@ -16,7 +16,7 @@ var SETTINGS = {
 };
 
 var lobbyManager = new (require('./gameObjects/LobbyManager.js'))(io);
-var roomManager = new (require('./gameObjects/roomManager.js'))(io,SETTINGS);
+var roomManager = new (require('./gameObjects/RoomManager.js'))(io,SETTINGS);
 
 io.on('connection', function(socket){
   console.log('user connected: ', socket.id);
