@@ -34,12 +34,12 @@ io.on('connection', function(socket){
   });
   socket.on('keydown', function(keyCode){
     var roomIndex = roomManager.findRoomIndex(socket);
-    if(roomIndex)
+    if(roomIndex !== null)
       roomManager.rooms[roomIndex].objects[socket.id].keypress[keyCode] = true;
   });
   socket.on('keyup', function(keyCode){
     var roomIndex = roomManager.findRoomIndex(socket);
-    if(roomIndex)
+    if(roomIndex !== null)
       delete roomManager.rooms[roomIndex].objects[socket.id].keypress[keyCode];
   });
 });
