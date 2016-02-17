@@ -11,12 +11,10 @@ http.listen(port, function(){
   console.log("server on!: http://localhost:3000/");
 });
 
-var SETTINGS = {
-  WIDTH : 600, HEIGHT : 400, BACKGROUND_COLOR : "#FFFFFF"
-};
+var SETTINGS = require("./gameObjects/SETTINGS.js");
 
 var lobbyManager = new (require('./gameObjects/LobbyManager.js'))(io);
-var roomManager = new (require('./gameObjects/RoomManager.js'))(io,SETTINGS);
+var roomManager = new (require('./gameObjects/RoomManager.js'))(io);
 
 io.on('connection', function(socket){
   console.log('user connected: ', socket.id);
