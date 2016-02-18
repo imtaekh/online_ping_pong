@@ -8,7 +8,8 @@ var SETTINGS = {
     HEIGHT : 80
   },
   BALL : {
-    R : 8
+    WIDTH : 15,
+    HEIGHT : 15,
   }
 };
 
