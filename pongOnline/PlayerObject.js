@@ -28,7 +28,7 @@ function Player(id,position){
 }
 Player.prototype = new BaseObejct();
 Player.prototype.constructor = Player;
-Player.prototype.update = function(){
+Player.prototype.update = function(objects){
   if(this.keypress[UP] && this.status.y - UNIT >= 0)
     this.status.y -= UNIT;
   if(this.keypress[DOWN] && this.status.y + this.status.height + UNIT <= SETTINGS.HEIGHT)
