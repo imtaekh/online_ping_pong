@@ -24,7 +24,7 @@ function Player(id,position){
   }
   this.status.color = color;
   this.id = id;
-  this.keypress = [];
+  this.keypress = {};
 }
 Player.prototype = new BaseObejct();
 Player.prototype.constructor = Player;

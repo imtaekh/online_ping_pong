@@ -10,6 +10,9 @@ var SETTINGS = {
   BALL : {
     WIDTH : 15,
     HEIGHT : 15,
+  },
+  NET : {
+    WIDTH : 6
   }
 };
 

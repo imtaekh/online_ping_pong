@@ -47,7 +47,6 @@
               ctx.stroke();
               ctx.fill();
               break;
-
           }
         });
       });
@@ -55,6 +54,21 @@
       function drawBackground(){
         ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
         ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
+        drawNet();
+      }
+
+      function drawNet(){
+        var num = 10;
+        var height = GAME_SETTINGS.HEIGHT/((num+1)*2);
+        var y = height/2;
+        var x = (GAME_SETTINGS.WIDTH-GAME_SETTINGS.NET.WIDTH)/2;
+        ctx.fillStyle = "#000000";
+        while(y < GAME_SETTINGS.HEIGHT){
+            ctx.fillRect(x,y,GAME_SETTINGS.NET.WIDTH,height);
+            y += height*2;
+        }
+
+        GAME_SETTINGS.NET.WIDTH
       }
 
       socket.on('waiting', function(){
