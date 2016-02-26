@@ -11,10 +11,10 @@ http.listen(port, function(){
   console.log("server on!: http://localhost:3000/");
 });
 
-var SETTINGS = require("./gameObjects/SETTINGS.js");
+var SETTINGS = require("./pongOnline/SETTINGS.js");
 
-var lobbyManager = new (require('./gameObjects/LobbyManager.js'))(io);
-var roomManager = new (require('./gameObjects/RoomManager.js'))(io);
+var lobbyManager = new (require('./pongOnline/LobbyManager.js'))(io);
+var roomManager = new (require('./pongOnline/RoomManager.js'))(io);
 
 io.on('connection', function(socket){
   console.log('user connected: ', socket.id);
