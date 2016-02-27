@@ -55,6 +55,13 @@
         ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
         ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
         drawNet();
+        drawBorder();
+      }
+
+      function drawBorder(){
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
+        ctx.fillRect(0,GAME_SETTINGS.HEIGHT-GAME_SETTINGS.BORDER_WIDTH,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
       }
 
       function drawNet(){
@@ -67,8 +74,6 @@
             ctx.fillRect(x,y,GAME_SETTINGS.NET.WIDTH,height);
             y += height*2;
         }
-
-        GAME_SETTINGS.NET.WIDTH
       }
 
       socket.on('waiting', function(){

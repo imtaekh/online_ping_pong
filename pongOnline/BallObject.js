@@ -10,7 +10,7 @@ function Ball(){
   this.status.y = (SETTINGS.HEIGHT-SETTINGS.BALL.HEIGHT)/2;
   this.dx = 1;
   this.dy = 1;
-  this.speed = 1;
+  this.speed = 2;
   this.status.shape = "rectangle";
   this.status.width = SETTINGS.BALL.WIDTH;
   this.status.height = SETTINGS.BALL.HEIGHT;
@@ -21,13 +21,13 @@ Ball.prototype.constructor = Ball;
 Ball.prototype.update = function(objects){
   this.status.x += this.dx*this.speed;
   this.status.y += this.dy*this.speed;
-  if(this.status.x <= 0)
+  if(this.status.x <= 0 - this.status.width*2)
     this.dx = Math.abs(this.dx);
-  if(this.status.x + this.status.width >= SETTINGS.WIDTH)
+  if(this.status.x + this.status.width >= SETTINGS.WIDTH + this.status.width*2)
     this.dx = -Math.abs(this.dx);
-  if(this.status.y <= 0)
+  if(this.status.y <= 0 + SETTINGS.BORDER_WIDTH)
     this.dy = Math.abs(this.dy);
-  if(this.status.y + this.status.height >= SETTINGS.HEIGHT)
+  if(this.status.y + this.status.height >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
     this.dy = -Math.abs(this.dy);
 
   var headingTo = (this.dx>0)?(DIR.RIGHT):(DIR.LEFT);
