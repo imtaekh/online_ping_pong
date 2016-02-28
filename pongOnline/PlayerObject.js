@@ -10,6 +10,7 @@ function Player(id,position){
   for(var i = 0; i < 6; i++ ){
     color += (Math.floor(Math.random()*16)).toString(16);
   }
+  this.role = "player";
   this.status.shape = "rectangle";
   this.status.height = SETTINGS.PLAYER.HEIGHT;
   this.status.width = SETTINGS.PLAYER.WIDTH;
@@ -24,6 +25,7 @@ function Player(id,position){
   }
   this.status.color = color;
   this.id = id;
+  this.score = 0;
   this.keypress = {};
 }
 Player.prototype = new BaseObejct();
