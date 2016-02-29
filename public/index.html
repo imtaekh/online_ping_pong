@@ -10,13 +10,13 @@
 <script>
 $(function(){
   var GAME_SETTINGS = null;
+  var INTERVAL = 10;
 
   var canvas = document.createElement('canvas');
   var ctx = canvas.getContext("2d");
   $(canvas).css("display", "block");
   $(canvas).css("border", "black 1px solid");
   $(canvas).css("margin", "0 auto");
-
 
   var socket = io();
   $('body').on('keydown', function(e){
@@ -26,12 +26,65 @@ $(function(){
     socket.emit('keyup', e.keyCode)
   });
 
+  function drawBackground(){
+    ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
+    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
+  }
+
+  function drawBorder(){
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
+    ctx.fillRect(0,GAME_SETTINGS.HEIGHT-GAME_SETTINGS.BORDER_WIDTH,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
+  }
+
+  function drawNet(){
+    var num = 10;
+    var height = GAME_SETTINGS.HEIGHT/((num+1)*2);
+    var y = height/2;
+    var x = (GAME_SETTINGS.WIDTH-GAME_SETTINGS.NET.WIDTH)/2;
+    ctx.fillStyle = "#000000";
+    while(y < GAME_SETTINGS.HEIGHT){
+        ctx.fillRect(x,y,GAME_SETTINGS.NET.WIDTH,height);
+        y += height*2;
+    }
+  }
+
+  var waiting = new (function(){
+    this.isLocked = false;
+    this.interval = null;
+    this.animation = {
+      count: 0,
+      dir: 1
+    };
+    this.setInterval = function(){
+      if(!this.isLocked){
+        this.interval = setInterval(function(){
+          waiting.animation.count += waiting.animation.dir;
+          if(waiting.animation.count == 0 || waiting.animation.count == 100 ){
+            waiting.animation.dir *= -1;
+          }
+          var transparency = 0.2 + 0.7*(waiting.animation.count/100);
+          drawBackground();
+          ctx.font = "30px Arial";
+          ctx.fillStyle = "rgba(0,0,0,"+transparency+")";
+          ctx.textAlign = "center";
+          ctx.fillText("WAITING OPPONENT..", GAME_SETTINGS.WIDTH/2,GAME_SETTINGS.HEIGHT/2);
+        },INTERVAL)
+      }
+    };
+  })();
+
   socket.on('connected', function(SERVER_GAME_SETTINGS){
     GAME_SETTINGS = SERVER_GAME_SETTINGS;
     $(canvas).attr("width", GAME_SETTINGS.WIDTH);
     $(canvas).attr("height", GAME_SETTINGS.HEIGHT);
     document.body.appendChild(canvas);
     waiting.setInterval();
+  });
+
+  socket.on('in', function(){
+    waiting.isLocked = true;
+    clearInterval(waiting.interval);
   });
 
   socket.on('update', function(statuses){
@@ -62,64 +115,11 @@ $(function(){
     });
   });
 
-  function drawBackground(){
-    ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
-    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
-  }
-
-  function drawBorder(){
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
-    ctx.fillRect(0,GAME_SETTINGS.HEIGHT-GAME_SETTINGS.BORDER_WIDTH,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
-  }
-
-  function drawNet(){
-    var num = 10;
-    var height = GAME_SETTINGS.HEIGHT/((num+1)*2);
-    var y = height/2;
-    var x = (GAME_SETTINGS.WIDTH-GAME_SETTINGS.NET.WIDTH)/2;
-    ctx.fillStyle = "#000000";
-    while(y < GAME_SETTINGS.HEIGHT){
-        ctx.fillRect(x,y,GAME_SETTINGS.NET.WIDTH,height);
-        y += height*2;
-    }
-  }
-
-  var waiting = {
-    isLocked : false,
-    interval : null,
-    animation: {
-      count: 0,
-      dir: 1
-    },
-    setInterval : function(){
-      if(!this.isLocked){
-        this.interval = setInterval(function(){
-          waiting.animation.count += waiting.animation.dir;
-          if(waiting.animation.count == 0 || waiting.animation.count == 100 ){
-            waiting.animation.dir *= -1;
-          }
-          var transparency = 0.2 + 0.7*(waiting.animation.count/100);
-          drawBackground();
-          ctx.font = "30px Arial";
-          ctx.fillStyle = "rgba(0,0,0,"+transparency+")";
-          ctx.textAlign = "center";
-          ctx.fillText("WAITING OPPONENT..", GAME_SETTINGS.WIDTH/2,GAME_SETTINGS.HEIGHT/2);
-        },10)
-      }
-    }
-  }
-
-  socket.on('in', function(){
-    waiting.isLocked = true;
-    clearInterval(waiting.interval);
-  });
-
   socket.on('destroy', function(){
     waiting.isLocked = false;
     waiting.setInterval();
   });
-  
+
 })
 </script>
   </body>
