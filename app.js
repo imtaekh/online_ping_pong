@@ -24,7 +24,7 @@ io.on('connection', function(socket){
   lobbyManager.push(socket);
   lobbyManager.dispatch(roomManager);
 
-  io.to(socket.id).emit('connected', SETTINGS);
+  io.to(socket.id).emit('connected', SETTINGS.CLIENT_SETTINGS);
 
   socket.on('disconnect', function(){
     var roomIndex = roomManager.roomIndex[socket.id];
