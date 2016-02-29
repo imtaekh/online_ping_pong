@@ -23,6 +23,7 @@ function RoomManager(io){
     room.players.forEach(function(socket){
       LbMg.push(socket);
       delete RmMg.roomIndex[socket.id];
+      io.to(socket.id).emit('destroy');
     });
     delete RmMg.rooms[roomId];
   };

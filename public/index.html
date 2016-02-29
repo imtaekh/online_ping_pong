@@ -7,89 +7,120 @@
   <body>
     <script src="/socket.io/socket.io.js"></script>
     <script src="//code.jquery.com/jquery-1.11.1.js"></script>
-    <script>
-    $(function(){
-      var GAME_SETTINGS = null;
+<script>
+$(function(){
+  var GAME_SETTINGS = null;
 
-      var canvas = document.createElement('canvas');
-      var ctx = canvas.getContext("2d");
-      $(canvas).css("display", "block");
-      $(canvas).css("border", "black 1px solid");
-      $(canvas).css("margin", "0 auto");
+  var canvas = document.createElement('canvas');
+  var ctx = canvas.getContext("2d");
+  $(canvas).css("display", "block");
+  $(canvas).css("border", "black 1px solid");
+  $(canvas).css("margin", "0 auto");
 
-      var socket = io();
-      $('body').on('keydown', function(e){
-        socket.emit('keydown', e.keyCode)
-      });
-      $('body').on('keyup', function(e){
-        socket.emit('keyup', e.keyCode)
-      });
-      socket.on('connected', function(SERVER_GAME_SETTINGS){
-        GAME_SETTINGS = SERVER_GAME_SETTINGS;
-        $(canvas).attr("width", GAME_SETTINGS.WIDTH);
-        $(canvas).attr("height", GAME_SETTINGS.HEIGHT);
-        document.body.appendChild(canvas);
-      });
-      socket.on('update', function(statuses){
 
-        if(GAME_SETTINGS == null) return;
-        drawBackground();
-        statuses.forEach(function(status){
-          switch(status.shape){
-            case "rectangle":
-              ctx.fillStyle = status.color;
-              ctx.fillRect(status.x,status.y,status.width,status.height);
-              break;
-            case "circle":
-              ctx.fillStyle = status.color;
-              ctx.beginPath();
-              ctx.arc(status.x,status.y,status.r,0,2*Math.PI);
-              ctx.stroke();
-              ctx.fill();
-              break;
-            case "text":
-              ctx.font = status.size+"px "+status.font;
-              ctx.fillStyle = status.color;
-              ctx.textAlign = status.textAlign;
-              ctx.fillText(status.text,   status.x ,status.y);
-              break;
+  var socket = io();
+  $('body').on('keydown', function(e){
+    socket.emit('keydown', e.keyCode)
+  });
+  $('body').on('keyup', function(e){
+    socket.emit('keyup', e.keyCode)
+  });
+
+  socket.on('connected', function(SERVER_GAME_SETTINGS){
+    GAME_SETTINGS = SERVER_GAME_SETTINGS;
+    $(canvas).attr("width", GAME_SETTINGS.WIDTH);
+    $(canvas).attr("height", GAME_SETTINGS.HEIGHT);
+    document.body.appendChild(canvas);
+    waiting.setInterval();
+  });
+
+  socket.on('update', function(statuses){
+    if(GAME_SETTINGS == null) return;
+    drawBackground();
+    drawNet();
+    drawBorder();
+    statuses.forEach(function(status){
+      switch(status.shape){
+        case "rectangle":
+          ctx.fillStyle = status.color;
+          ctx.fillRect(status.x,status.y,status.width,status.height);
+          break;
+        case "circle":
+          ctx.fillStyle = status.color;
+          ctx.beginPath();
+          ctx.arc(status.x,status.y,status.r,0,2*Math.PI);
+          ctx.stroke();
+          ctx.fill();
+          break;
+        case "text":
+          ctx.font = status.size+"px "+status.font;
+          ctx.fillStyle = status.color;
+          ctx.textAlign = status.textAlign;
+          ctx.fillText(status.text,status.x,status.y);
+          break;
+      }
+    });
+  });
+
+  function drawBackground(){
+    ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
+    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
+  }
+
+  function drawBorder(){
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
+    ctx.fillRect(0,GAME_SETTINGS.HEIGHT-GAME_SETTINGS.BORDER_WIDTH,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
+  }
+
+  function drawNet(){
+    var num = 10;
+    var height = GAME_SETTINGS.HEIGHT/((num+1)*2);
+    var y = height/2;
+    var x = (GAME_SETTINGS.WIDTH-GAME_SETTINGS.NET.WIDTH)/2;
+    ctx.fillStyle = "#000000";
+    while(y < GAME_SETTINGS.HEIGHT){
+        ctx.fillRect(x,y,GAME_SETTINGS.NET.WIDTH,height);
+        y += height*2;
+    }
+  }
+
+  var waiting = {
+    isLocked : false,
+    interval : null,
+    animation: {
+      count: 0,
+      dir: 1
+    },
+    setInterval : function(){
+      if(!this.isLocked){
+        this.interval = setInterval(function(){
+          waiting.animation.count += waiting.animation.dir;
+          if(waiting.animation.count == 0 || waiting.animation.count == 100 ){
+            waiting.animation.dir *= -1;
           }
-        });
-      });
-
-      function drawBackground(){
-        ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
-        ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
-        drawNet();
-        drawBorder();
+          var transparency = 0.2 + 0.7*(waiting.animation.count/100);
+          drawBackground();
+          ctx.font = "30px Arial";
+          ctx.fillStyle = "rgba(0,0,0,"+transparency+")";
+          ctx.textAlign = "center";
+          ctx.fillText("WAITING OPPONENT..", GAME_SETTINGS.WIDTH/2,GAME_SETTINGS.HEIGHT/2);
+        },10)
       }
+    }
+  }
 
-      function drawBorder(){
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
-        ctx.fillRect(0,GAME_SETTINGS.HEIGHT-GAME_SETTINGS.BORDER_WIDTH,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
-      }
+  socket.on('in', function(){
+    waiting.isLocked = true;
+    clearInterval(waiting.interval);
+  });
 
-      function drawNet(){
-        var num = 10;
-        var height = GAME_SETTINGS.HEIGHT/((num+1)*2);
-        var y = height/2;
-        var x = (GAME_SETTINGS.WIDTH-GAME_SETTINGS.NET.WIDTH)/2;
-        ctx.fillStyle = "#000000";
-        while(y < GAME_SETTINGS.HEIGHT){
-            ctx.fillRect(x,y,GAME_SETTINGS.NET.WIDTH,height);
-            y += height*2;
-        }
-      }
-
-      socket.on('waiting', function(){
-        console.log("I'm waiting!");
-      });
-
-      socket.on('in', function(){
-        console.log("I'm in!");
-      });
-    })
-    </script>
+  socket.on('destroy', function(){
+    waiting.isLocked = false;
+    waiting.setInterval();
+  });
+  
+})
+</script>
   </body>
 </html>
