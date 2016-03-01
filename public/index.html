@@ -20,66 +20,18 @@ $(function(){
 
   var socket = io();
   $('body').on('keydown', function(e){
-    socket.emit('keydown', e.keyCode)
+    socket.emit('keydown', e.keyCode);
   });
   $('body').on('keyup', function(e){
-    socket.emit('keyup', e.keyCode)
+    socket.emit('keyup', e.keyCode);
   });
-
-  function drawBackground(){
-    ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
-    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
-  }
-
-  function drawBorder(){
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
-    ctx.fillRect(0,GAME_SETTINGS.HEIGHT-GAME_SETTINGS.BORDER_WIDTH,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
-  }
-
-  function drawNet(){
-    var num = 10;
-    var height = GAME_SETTINGS.HEIGHT/((num+1)*2);
-    var y = height/2;
-    var x = (GAME_SETTINGS.WIDTH-GAME_SETTINGS.NET.WIDTH)/2;
-    ctx.fillStyle = "#000000";
-    while(y < GAME_SETTINGS.HEIGHT){
-        ctx.fillRect(x,y,GAME_SETTINGS.NET.WIDTH,height);
-        y += height*2;
-    }
-  }
-
-  var waiting = new (function(){
-    this.isLocked = false;
-    this.interval = null;
-    this.animation = {
-      count: 0,
-      dir: 1
-    };
-    this.setInterval = function(){
-      if(!this.isLocked){
-        this.interval = setInterval(function(){
-          waiting.animation.count += waiting.animation.dir;
-          if(waiting.animation.count == 0 || waiting.animation.count == 100 ){
-            waiting.animation.dir *= -1;
-          }
-          var transparency = 0.2 + 0.7*(waiting.animation.count/100);
-          drawBackground();
-          ctx.font = "30px Arial";
-          ctx.fillStyle = "rgba(0,0,0,"+transparency+")";
-          ctx.textAlign = "center";
-          ctx.fillText("WAITING OPPONENT..", GAME_SETTINGS.WIDTH/2,GAME_SETTINGS.HEIGHT/2);
-        },INTERVAL)
-      }
-    };
-  })();
 
   socket.on('connected', function(SERVER_GAME_SETTINGS){
     GAME_SETTINGS = SERVER_GAME_SETTINGS;
     $(canvas).attr("width", GAME_SETTINGS.WIDTH);
     $(canvas).attr("height", GAME_SETTINGS.HEIGHT);
     document.body.appendChild(canvas);
-    waiting.setInterval();
+    start.initialize();
   });
 
   socket.on('in', function(){
@@ -117,10 +69,182 @@ $(function(){
 
   socket.on('destroy', function(){
     waiting.isLocked = false;
-    waiting.setInterval();
+    start.initialize();
   });
 
+  function drawBackground(){
+    ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
+    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
+  }
+
+  function drawBorder(){
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
+    ctx.fillRect(0,GAME_SETTINGS.HEIGHT-GAME_SETTINGS.BORDER_WIDTH,GAME_SETTINGS.WIDTH,GAME_SETTINGS.BORDER_WIDTH);
+  }
+
+  function drawNet(){
+    var num = 10;
+    var height = GAME_SETTINGS.HEIGHT/((num+1)*2);
+    var y = height/2;
+    var x = (GAME_SETTINGS.WIDTH-GAME_SETTINGS.NET.WIDTH)/2;
+    ctx.fillStyle = "#000000";
+    while(y < GAME_SETTINGS.HEIGHT){
+        ctx.fillRect(x,y,GAME_SETTINGS.NET.WIDTH,height);
+        y += height*2;
+    }
+  }
+
+  var start = new (function(){
+    var start = this;
+    start.interval = null;
+
+    start.button1 = {
+      rect: {
+        x: undefined,
+        y: undefined,
+        width: 230,
+        height: 50,
+        lineWidth: 2,
+        color: {current:{fill: undefined, stroke: undefined}, fill:{default: "#1099cc", mouseover: "#0686e0"},stroke:{default: "#223344", mouseover: "#223344"}}
+      },
+      text:{
+        x: undefined,
+        y: undefined,
+        size: 30,
+        font: "Arial",
+        message: "START GAME",
+        color: {current:{fill: undefined, stroke: undefined, transparency: undefined}, fill:{default: "#223344", mouseover: "#ddeeff"},stroke:{default: "#223344", mouseover: "#334455"}}
+      },
+      animation: {
+        maxCount: 100,
+        count: 0,
+        dir: 1,
+      }
+    };
+    start.button1.initialize = function(){
+      var rect = this.rect;
+      rect.x = (GAME_SETTINGS.WIDTH-rect.width)/2;
+      rect.y = (GAME_SETTINGS.HEIGHT-rect.height)/2;
+      rect.color.current.fill = rect.color.fill.default;
+      rect.color.current.stroke = rect.color.stroke.default;
+
+      var text = this.text;
+      text.x = (GAME_SETTINGS.WIDTH)/2;
+      text.y = (GAME_SETTINGS.HEIGHT)/2;
+      text.color.current.fill = text.color.fill.default;
+      text.color.current.stroke = text.color.stroke.default;
+
+      $(canvas).on("click",this.click);
+      $(canvas).on("mousemove",this.mousemove);
+    }
+    start.button1.destroy = function(){
+      $(canvas).off();
+    }
+    start.button1.draw = function(){
+      ctx.save();
+
+      var rect = this.rect;
+      ctx.fillStyle = rect.color.current.fill;
+      ctx.fillRect(rect.x,rect.y,rect.width,rect.height);
+      ctx.strokeStyle = rect.color.current.stroke;
+      ctx.lineWidth = rect.lineWidth;
+      ctx.beginPath();
+      ctx.rect(rect.x,rect.y,rect.width,rect.height);
+      ctx.closePath();
+      ctx.stroke();
+
+      var text = this.text;
+      ctx.font = text.size+"px "+text.font;
+      ctx.fillStyle = text.color.current.fill;
+      ctx.globalAlpha = text.color.current.transparency?text.color.current.transparency:1;
+      ctx.textAlign = "center";
+      ctx.textBaseline= "middle";
+      ctx.fillText(text.message, text.x, text.y);
+
+      ctx.restore();
+    }
+    start.button1.update = function(){
+      var text = this.text;
+      this.animation.count += this.animation.dir;
+      if(this.animation.count <= 0 || this.animation.count >= this.animation.maxCount ){
+        this.animation.dir *= -1;
+      }
+      text.color.current.transparency = 0.2 + 0.7*(this.animation.count/100);
+    }
+    start.button1.click = function(e){
+      var rect = start.button1.rect;
+      if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
+        start.toWaiting()
+      }
+    }
+    start.button1.mousemove = function(e){
+      var rect = start.button1.rect;
+      var text = start.button1.text;
+      if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
+        rect.color.current.fill = rect.color.fill.mouseover;
+        rect.color.current.stroke = rect.color.stroke.mouseover;
+        text.color.current.fill = text.color.fill.mouseover;
+        text.color.current.stroke = text.color.stroke.mouseover;
+      } else {
+        rect.color.current.fill = rect.color.fill.default;
+        rect.color.current.stroke = rect.color.stroke.default;
+        text.color.current.fill = text.color.fill.default;
+        text.color.current.stroke = text.color.stroke.default;
+      }
+    }
+    start.initialize = function(){
+      start.button1.initialize();
+      start.interval = setInterval(start.loop,INTERVAL)
+    };
+    start.destroy = function(){
+      start.button1.destroy();
+      clearInterval(start.interval);
+    };
+    start.loop = function(){
+      start.button1.update();
+      drawBackground();
+      start.button1.draw();
+    };
+    start.toWaiting = function(){
+      start.destroy();
+      socket.emit('waiting');
+      waiting.setInterval();
+    }
+  })();
+
+  var waiting = new (function(){
+    this.isLocked = false;
+    this.interval = null;
+
+    this.animation = {};
+    this.animation.count = 0;
+    this.animation.dir =1;
+
+    this.setInterval = function(){
+      if(!this.isLocked){
+        this.interval = setInterval(function(){
+          waiting.animation.count += waiting.animation.dir;
+          if(waiting.animation.count == 0 || waiting.animation.count == 100 ){
+            waiting.animation.dir *= -1;
+          }
+          var transparency = 0.2 + 0.7*(waiting.animation.count/100);
+          drawBackground();
+          ctx.font = "30px Arial";
+          ctx.fillStyle = "rgba(0,0,0,"+transparency+")";
+          ctx.textAlign = "center";
+          ctx.fillText("WAITING OPPONENT..", GAME_SETTINGS.WIDTH/2,GAME_SETTINGS.HEIGHT/2);
+        },INTERVAL)
+      }
+    };
+  })();
 })
+
+//Common Functions
+function pointSquareCollusionCheck(x,y,square){
+  if(x >= square.x && x <= square.x + square.width && y >= square.y && y <= square.y + square.height )
+    return true;
+}
 </script>
   </body>
 </html>

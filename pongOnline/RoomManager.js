@@ -21,7 +21,6 @@ function RoomManager(io){
   RmMg.destroy = function(roomId, LbMg){
     var room = RmMg.rooms[roomId];
     room.players.forEach(function(socket){
-      LbMg.push(socket);
       delete RmMg.roomIndex[socket.id];
       io.to(socket.id).emit('destroy');
     });
