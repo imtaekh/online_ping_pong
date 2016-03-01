@@ -99,6 +99,25 @@ $(function(){
     var start = this;
     start.interval = null;
 
+    start.initialize = function(){
+      start.button1.initialize();
+      start.interval = setInterval(start.loop,INTERVAL)
+    };
+    start.loop = function(){
+      start.button1.update();
+      drawBackground();
+      start.button1.draw();
+    };
+    start.destroy = function(){
+      start.button1.destroy();
+      clearInterval(start.interval);
+    };
+    start.toWaiting = function(){
+      start.destroy();
+      socket.emit('waiting');
+      waiting.setInterval();
+    };
+
     start.button1 = {
       rect: {
         x: undefined,
@@ -137,10 +156,10 @@ $(function(){
 
       $(canvas).on("click",this.click);
       $(canvas).on("mousemove",this.mousemove);
-    }
+    };
     start.button1.destroy = function(){
       $(canvas).off();
-    }
+    };
     start.button1.draw = function(){
       ctx.save();
 
@@ -163,7 +182,7 @@ $(function(){
       ctx.fillText(text.message, text.x, text.y);
 
       ctx.restore();
-    }
+    };
     start.button1.update = function(){
       var text = this.text;
       this.animation.count += this.animation.dir;
@@ -171,13 +190,13 @@ $(function(){
         this.animation.dir *= -1;
       }
       text.color.current.transparency = 0.2 + 0.7*(this.animation.count/100);
-    }
+    };
     start.button1.click = function(e){
       var rect = start.button1.rect;
       if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
         start.toWaiting()
       }
-    }
+    };
     start.button1.mousemove = function(e){
       var rect = start.button1.rect;
       var text = start.button1.text;
@@ -192,25 +211,7 @@ $(function(){
         text.color.current.fill = text.color.fill.default;
         text.color.current.stroke = text.color.stroke.default;
       }
-    }
-    start.initialize = function(){
-      start.button1.initialize();
-      start.interval = setInterval(start.loop,INTERVAL)
     };
-    start.destroy = function(){
-      start.button1.destroy();
-      clearInterval(start.interval);
-    };
-    start.loop = function(){
-      start.button1.update();
-      drawBackground();
-      start.button1.draw();
-    };
-    start.toWaiting = function(){
-      start.destroy();
-      socket.emit('waiting');
-      waiting.setInterval();
-    }
   })();
 
   var waiting = new (function(){
