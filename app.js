@@ -28,6 +28,7 @@ io.on('connection', function(socket){
   socket.on('disconnect', function(){
     var roomIndex = roomManager.roomIndex[socket.id];
     if(roomIndex) roomManager.destroy(roomIndex, lobbyManager);
+    lobbyManager.kick(socket);
     console.log('user disconnected: ', socket.id);
   });
   socket.on('keydown', function(keyCode){

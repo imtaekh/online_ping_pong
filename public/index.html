@@ -35,7 +35,6 @@ $(function(){
   });
 
   socket.on('in', function(){
-    waiting.isLocked = true;
     clearInterval(waiting.interval);
   });
 
@@ -68,7 +67,6 @@ $(function(){
   });
 
   socket.on('destroy', function(){
-    waiting.isLocked = false;
     start.initialize();
   });
 
@@ -99,26 +97,7 @@ $(function(){
     var start = this;
     start.interval = null;
 
-    start.initialize = function(){
-      start.button1.initialize();
-      start.interval = setInterval(start.loop,INTERVAL)
-    };
-    start.loop = function(){
-      start.button1.update();
-      drawBackground();
-      start.button1.draw();
-    };
-    start.destroy = function(){
-      start.button1.destroy();
-      clearInterval(start.interval);
-    };
-    start.toWaiting = function(){
-      start.destroy();
-      socket.emit('waiting');
-      waiting.setInterval();
-    };
-
-    start.button1 = {
+    start.button1 = new ButtonObject({
       rect: {
         x: undefined,
         y: undefined,
@@ -132,120 +111,185 @@ $(function(){
         y: undefined,
         size: 30,
         font: "Arial",
+        textBaseline: "middle",
+        textAlign: "center",
+        lineWidth: 2,
         message: "START GAME",
-        color: {current:{fill: undefined, stroke: undefined, transparency: undefined}, fill:{default: "#223344", mouseover: "#ddeeff"},stroke:{default: "#223344", mouseover: "#334455"}}
+        color: {current:{fill: undefined, stroke: undefined}, fill:{default: "#123456", mouseover: "#ddeeff"}}
+      }
+    });
+    start.button1.setEvents = function(){
+      $(canvas).on("click",this.click);
+      $(canvas).on("mousemove",this.mousemove);
+    }
+    start.button1.click = function(e){
+      var rect = start.button1.data.rect;
+      if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
+        start.toWaiting();
+      }
+    };
+    start.button1.mousemove = function(e){
+      var rect = start.button1.data.rect;
+      var text = start.button1.data.text;
+      var mouseover = pointSquareCollusionCheck(e.offsetX, e.offsetY, rect);
+
+      rect.color.current.fill   = mouseover?rect.color.fill.mouseover  :rect.color.fill.default;
+      rect.color.current.stroke = mouseover?rect.color.stroke.mouseover:rect.color.stroke.default;
+      text.color.current.fill   = mouseover?text.color.fill.mouseover  :text.color.fill.default;
+    };
+
+    start.initialize = function(){
+      start.button1.initialize(canvas,ctx,GAME_SETTINGS);
+      start.interval = setInterval(start.loop,INTERVAL)
+    };
+    start.loop = function(){
+      drawBackground();
+      start.button1.draw();
+    };
+    start.destroy = function(){
+      $(canvas).off();
+      clearInterval(start.interval);
+    };
+    start.toWaiting = function(){
+      start.destroy();
+      socket.emit('waiting');
+      waiting.initialize();
+    };
+  })();
+
+  var waiting = new (function(){
+    var waiting = this;
+    waiting.interval = null;
+
+    waiting.text1 = new TextObject({
+      text:{
+        x: undefined,
+        y: undefined,
+        size: 30,
+        font: "Arial",
+        textBaseline: "middle",
+        textAlign: "center",
+        lineWidth: 2,
+        message: "WAITING FOR OPPONENT..",
+        color: {current:{fill: undefined, stroke: undefined, transparency: undefined}, fill:{default: "#000000"}}
       },
       animation: {
         maxCount: 100,
         count: 0,
         dir: 1,
       }
+    });
+    waiting.text1.update = function(){
+      var text = this.data.text;
+      var animation = this.data.animation;
+      animation.count += animation.dir;
+      if(animation.count <= 0 || animation.count >= animation.maxCount ){
+        animation.dir *= -1;
+      }
+      text.color.current.transparency = 0.2 + 0.7*(animation.count/100);
     };
-    start.button1.initialize = function(){
-      var rect = this.rect;
-      rect.x = (GAME_SETTINGS.WIDTH-rect.width)/2;
-      rect.y = (GAME_SETTINGS.HEIGHT-rect.height)/2;
-      rect.color.current.fill = rect.color.fill.default;
-      rect.color.current.stroke = rect.color.stroke.default;
 
-      var text = this.text;
-      text.x = (GAME_SETTINGS.WIDTH)/2;
-      text.y = (GAME_SETTINGS.HEIGHT)/2;
-      text.color.current.fill = text.color.fill.default;
-      text.color.current.stroke = text.color.stroke.default;
-
-      $(canvas).on("click",this.click);
-      $(canvas).on("mousemove",this.mousemove);
+    waiting.initialize = function(){
+      waiting.text1.initialize(canvas,ctx,GAME_SETTINGS);
+      waiting.interval = setInterval(waiting.loop,INTERVAL)
     };
-    start.button1.destroy = function(){
+    waiting.loop = function(){
+      waiting.text1.update();
+      drawBackground();
+      waiting.text1.draw();
+    };
+    waiting.destroy = function(){
       $(canvas).off();
+      clearInterval(waiting.interval);
     };
-    start.button1.draw = function(){
-      ctx.save();
 
-      var rect = this.rect;
-      ctx.fillStyle = rect.color.current.fill;
-      ctx.fillRect(rect.x,rect.y,rect.width,rect.height);
-      ctx.strokeStyle = rect.color.current.stroke;
-      ctx.lineWidth = rect.lineWidth;
-      ctx.beginPath();
-      ctx.rect(rect.x,rect.y,rect.width,rect.height);
-      ctx.closePath();
-      ctx.stroke();
-
-      var text = this.text;
-      ctx.font = text.size+"px "+text.font;
-      ctx.fillStyle = text.color.current.fill;
-      ctx.globalAlpha = text.color.current.transparency?text.color.current.transparency:1;
-      ctx.textAlign = "center";
-      ctx.textBaseline= "middle";
-      ctx.fillText(text.message, text.x, text.y);
-
-      ctx.restore();
-    };
-    start.button1.update = function(){
-      var text = this.text;
-      this.animation.count += this.animation.dir;
-      if(this.animation.count <= 0 || this.animation.count >= this.animation.maxCount ){
-        this.animation.dir *= -1;
-      }
-      text.color.current.transparency = 0.2 + 0.7*(this.animation.count/100);
-    };
-    start.button1.click = function(e){
-      var rect = start.button1.rect;
-      if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
-        start.toWaiting()
-      }
-    };
-    start.button1.mousemove = function(e){
-      var rect = start.button1.rect;
-      var text = start.button1.text;
-      if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
-        rect.color.current.fill = rect.color.fill.mouseover;
-        rect.color.current.stroke = rect.color.stroke.mouseover;
-        text.color.current.fill = text.color.fill.mouseover;
-        text.color.current.stroke = text.color.stroke.mouseover;
-      } else {
-        rect.color.current.fill = rect.color.fill.default;
-        rect.color.current.stroke = rect.color.stroke.default;
-        text.color.current.fill = text.color.fill.default;
-        text.color.current.stroke = text.color.stroke.default;
-      }
-    };
-  })();
-
-  var waiting = new (function(){
-    this.isLocked = false;
-    this.interval = null;
-
-    this.animation = {};
-    this.animation.count = 0;
-    this.animation.dir =1;
-
-    this.setInterval = function(){
-      if(!this.isLocked){
-        this.interval = setInterval(function(){
-          waiting.animation.count += waiting.animation.dir;
-          if(waiting.animation.count == 0 || waiting.animation.count == 100 ){
-            waiting.animation.dir *= -1;
-          }
-          var transparency = 0.2 + 0.7*(waiting.animation.count/100);
-          drawBackground();
-          ctx.font = "30px Arial";
-          ctx.fillStyle = "rgba(0,0,0,"+transparency+")";
-          ctx.textAlign = "center";
-          ctx.fillText("WAITING OPPONENT..", GAME_SETTINGS.WIDTH/2,GAME_SETTINGS.HEIGHT/2);
-        },INTERVAL)
-      }
-    };
   })();
 })
+
+// Objects
+function TextObject(data){
+  this.data = data;
+}
+
+TextObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS){
+  this.canvas = canvas;
+  this.ctx = ctx;
+  this.GAME_SETTINGS = GAME_SETTINGS;
+  if(this.setEvents) this.setEvents();
+
+  var text = this.data.text;
+  text.x = (GAME_SETTINGS.WIDTH)/2;
+  text.y = (GAME_SETTINGS.HEIGHT)/2;
+  text.color.current.fill = text.color.fill?text.color.fill.default:null;
+  text.color.current.stroke = text.color.stroke?text.color.stroke.default:null;
+};
+
+TextObject.prototype.draw = function(){
+  var ctx = this.ctx;
+  ctx.save();
+  ctx.beginPath();
+
+  var text = this.data.text;
+  ctx.font = text.size+"px "+text.font;
+  ctx.textAlign = text.textAlign;
+  ctx.textBaseline = text.textBaseline;
+  ctx.globalAlpha = text.color.current.transparency?text.color.current.transparency:1;
+  if(text.color.current.fill){
+    ctx.fillStyle = text.color.current.fill;
+    ctx.fillText(text.message, text.x, text.y);
+  }
+  if(text.color.current.stroke){
+    ctx.strokeStyle = text.color.current.stroke;
+    ctx.lineWidth = text.lineWidth;
+    ctx.strokeText(text.message, text.x, text.y);
+  }
+
+  ctx.restore();
+};
+
+function ButtonObject(data){
+  TextObject.call(this, data);
+};
+ButtonObject.prototype = new TextObject();
+ButtonObject.prototype.constructor = ButtonObject;
+
+ButtonObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS){
+  TextObject.prototype.initialize.call(this,canvas,ctx,GAME_SETTINGS);
+
+  var rect = this.data.rect;
+  rect.x = (GAME_SETTINGS.WIDTH - rect.width)/2;
+  rect.y = (GAME_SETTINGS.HEIGHT - rect.height)/2;
+  rect.color.current.fill = rect.color.fill?rect.color.fill.default:null;
+  rect.color.current.stroke = rect.color.stroke?rect.color.stroke.default:null;
+};
+
+ButtonObject.prototype.draw = function(){
+  var ctx = this.ctx;
+  ctx.save();
+  ctx.beginPath();
+
+  var rect = this.data.rect;
+  ctx.globalAlpha = rect.color.current.transparency?text.color.current.transparency:1;
+  if(rect.color.current.fill){
+    ctx.fillStyle = rect.color.current.fill;
+    ctx.fillRect(rect.x,rect.y,rect.width,rect.height);
+  }
+  if(rect.color.current.stroke){
+    ctx.strokeStyle = rect.color.current.stroke;
+    ctx.lineWidth = rect.lineWidth;
+    ctx.rect(rect.x,rect.y,rect.width,rect.height);
+    ctx.stroke();
+  }
+  ctx.restore();
+  TextObject.prototype.draw.call(this);
+};
 
 //Common Functions
 function pointSquareCollusionCheck(x,y,square){
   if(x >= square.x && x <= square.x + square.width && y >= square.y && y <= square.y + square.height )
     return true;
 }
+
 </script>
   </body>
 </html>
