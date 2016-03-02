@@ -116,17 +116,31 @@ $(function(){
         lineWidth: 2,
         message: "START GAME",
         color: {current:{fill: undefined, stroke: undefined}, fill:{default: "#123456", mouseover: "#ddeeff"}}
+      },
+      animation: {
+        maxCount: 100,
+        count: 0,
+        dir: 1,
       }
     });
     start.button1.setEvents = function(){
       $(canvas).on("click",this.click);
       $(canvas).on("mousemove",this.mousemove);
-    }
+    };
     start.button1.click = function(e){
       var rect = start.button1.data.rect;
       if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
         start.toWaiting();
       }
+    };
+    start.button1.update = function(){
+      var text = this.data.text;
+      var animation = this.data.animation;
+      animation.count += animation.dir;
+      if(animation.count <= 0 || animation.count >= animation.maxCount ){
+        animation.dir *= -1;
+      }
+      text.color.current.transparency = 0.2 + 0.7*(animation.count/100);
     };
     start.button1.mousemove = function(e){
       var rect = start.button1.data.rect;
@@ -143,6 +157,7 @@ $(function(){
       start.interval = setInterval(start.loop,INTERVAL)
     };
     start.loop = function(){
+      start.button1.update();
       drawBackground();
       start.button1.draw();
     };
@@ -199,7 +214,6 @@ $(function(){
       waiting.text1.draw();
     };
     waiting.destroy = function(){
-      $(canvas).off();
       clearInterval(waiting.interval);
     };
 
