@@ -31,7 +31,7 @@ $(function(){
     $(canvas).attr("width", GAME_SETTINGS.WIDTH);
     $(canvas).attr("height", GAME_SETTINGS.HEIGHT);
     document.body.appendChild(canvas);
-    opponentLeft.initialize();
+    start.initialize();
   });
 
   socket.on('in', function(){
