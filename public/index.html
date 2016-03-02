@@ -31,7 +31,7 @@ $(function(){
     $(canvas).attr("width", GAME_SETTINGS.WIDTH);
     $(canvas).attr("height", GAME_SETTINGS.HEIGHT);
     document.body.appendChild(canvas);
-    start.initialize();
+    opponentLeft.initialize();
   });
 
   socket.on('in', function(){
@@ -67,12 +67,15 @@ $(function(){
   });
 
   socket.on('destroy', function(){
-    start.initialize();
+    opponentLeft.initialize();
   });
 
-  function drawBackground(){
-    ctx.fillStyle = GAME_SETTINGS.BACKGROUND_COLOR;
+  function drawBackground(globalAlpha,color){
+    ctx.save();
+    ctx.globalAlpha = globalAlpha?globalAlpha:1;
+    ctx.fillStyle = color?color:GAME_SETTINGS.BACKGROUND_COLOR;
     ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
+    ctx.restore();
   }
 
   function drawBorder(){
@@ -216,7 +219,93 @@ $(function(){
     waiting.destroy = function(){
       clearInterval(waiting.interval);
     };
+  })();
 
+  var opponentLeft = new (function(){
+    var opponentLeft = this;
+    opponentLeft.interval = null;
+    opponentLeft.text1 = new TextObject({
+      text:{
+        x: undefined,
+        y: undefined,
+        size: 32,
+        font: "Arial",
+        textBaseline: "middle",
+        textAlign: "center",
+        lineWidth: 2,
+        message: "OPPONENT LEFT!",
+        color: {current:{fill: undefined, stroke: undefined, transparency: undefined}, fill:{default: "#000000"}}
+      },
+      animation: {
+        maxCount: 200,
+        count: 0,
+      }
+    });
+    opponentLeft.text1.update = function(){
+      var text = this.data.text;
+      var animation = this.data.animation;
+      animation.count++;
+      text.color.current.transparency = 0.2 + 0.7*(animation.count/100);
+    };
+    opponentLeft.text2 = new TextObject({
+      text:{
+        x: undefined,
+        y: undefined,
+        size: 25,
+        font: "Arial",
+        textBaseline: "middle",
+        textAlign: "center",
+        lineWidth: 2,
+        message: "GOING BACK TO START..",
+        color: {current:{fill: undefined, stroke: undefined, transparency: undefined}, fill:{default: "#000000"}}
+      },
+      animation: {
+        count: 0,
+      }
+    });
+    opponentLeft.text2.update = function(){
+      var text = this.data.text;
+      var animation = this.data.animation;
+      if(animation.count == 0) text.color.current.fill = undefined;
+      animation.count++;
+      if(animation.count == 101) text.color.current.fill = text.color.fill.default;
+      if(animation.count > 100) text.color.current.transparency = ((animation.count-100)/150);
+
+    };
+
+    opponentLeft.initialize = function(){
+      opponentLeft.count =0;
+      opponentLeft.text1.initialize(canvas,ctx,GAME_SETTINGS,null,GAME_SETTINGS.HEIGHT/2-20);
+      opponentLeft.text2.initialize(canvas,ctx,GAME_SETTINGS,null,GAME_SETTINGS.HEIGHT/2+20);
+      opponentLeft.interval = setInterval(opponentLeft.loop,INTERVAL)
+    };
+    opponentLeft.loop = function(){
+      opponentLeft.text1.update();
+      opponentLeft.text2.update();
+      opponentLeft.update();
+      opponentLeft.draw();
+      opponentLeft.text1.draw();
+      opponentLeft.text2.draw();
+    };
+    opponentLeft.count = undefined;
+    opponentLeft.imgData = undefined;
+    opponentLeft.update = function(){
+      if(opponentLeft.count == 0){
+        drawBackground(0.8);
+        opponentLeft.imgData=ctx.getImageData(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
+      }
+      opponentLeft.count++
+      if(opponentLeft.count >= 300){
+        opponentLeft.destroy();
+        start.initialize();
+      }
+    }
+    opponentLeft.draw = function(){
+      ctx.putImageData(opponentLeft.imgData,0,0);
+    }
+    opponentLeft.destroy = function(){
+      clearInterval(opponentLeft.interval);
+    };
   })();
 })
 
@@ -225,17 +314,21 @@ function TextObject(data){
   this.data = data;
 }
 
-TextObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS){
+TextObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS,x,y){
   this.canvas = canvas;
   this.ctx = ctx;
   this.GAME_SETTINGS = GAME_SETTINGS;
   if(this.setEvents) this.setEvents();
 
   var text = this.data.text;
-  text.x = (GAME_SETTINGS.WIDTH)/2;
-  text.y = (GAME_SETTINGS.HEIGHT)/2;
+  var animation = this.data.animation;
+  text.x = x?x:GAME_SETTINGS.WIDTH/2;
+  text.y = y?y:GAME_SETTINGS.HEIGHT/2;
   text.color.current.fill = text.color.fill?text.color.fill.default:null;
   text.color.current.stroke = text.color.stroke?text.color.stroke.default:null;
+
+  if(animation.count>0) animation.count = 0;
+  if(this.initializeMore) this.initializeMore();
 };
 
 TextObject.prototype.draw = function(){
@@ -267,14 +360,14 @@ function ButtonObject(data){
 ButtonObject.prototype = new TextObject();
 ButtonObject.prototype.constructor = ButtonObject;
 
-ButtonObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS){
-  TextObject.prototype.initialize.call(this,canvas,ctx,GAME_SETTINGS);
-
+ButtonObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS,x,y){
   var rect = this.data.rect;
-  rect.x = (GAME_SETTINGS.WIDTH - rect.width)/2;
-  rect.y = (GAME_SETTINGS.HEIGHT - rect.height)/2;
+  rect.x = x?x:(GAME_SETTINGS.WIDTH - rect.width)/2;
+  rect.y = y?y:(GAME_SETTINGS.HEIGHT - rect.height)/2;
   rect.color.current.fill = rect.color.fill?rect.color.fill.default:null;
   rect.color.current.stroke = rect.color.stroke?rect.color.stroke.default:null;
+
+  TextObject.prototype.initialize.call(this,canvas,ctx,GAME_SETTINGS);
 };
 
 ButtonObject.prototype.draw = function(){
