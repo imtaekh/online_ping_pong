@@ -39,4 +39,12 @@ io.on('connection', function(socket){
     var roomIndex = roomManager.roomIndex[socket.id];
     if(roomIndex) delete roomManager.rooms[roomIndex].objects[socket.id].keypress[keyCode];
   });
+  socket.on('mousemove', function(x,y){
+    var roomIndex = roomManager.roomIndex[socket.id];
+    if(roomIndex) roomManager.rooms[roomIndex].objects[socket.id].mouse.move={x:x,y:y};
+  });
+  socket.on('click', function(x,y){
+    var roomIndex = roomManager.roomIndex[socket.id];
+    if(roomIndex) roomManager.rooms[roomIndex].objects[socket.id].mouse.click={x:x,y:y};
+  });
 });

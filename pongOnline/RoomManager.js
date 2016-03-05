@@ -32,7 +32,7 @@ module.exports = RoomManager;
 
 function Room(id, socket0, socket1) {
   this.id = id;
-  this.status = "waiting";
+  this.status = "ready";
   this.players = [socket0,socket1];
   this.objects = {};
   this.objects[socket0.id] = new Player(socket0.id, "LEFT");

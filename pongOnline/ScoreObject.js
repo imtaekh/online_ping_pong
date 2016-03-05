@@ -22,7 +22,7 @@ function Score(id,position){
 }
 Score.prototype = new BaseObejct();
 Score.prototype.constructor = Score;
-Score.prototype.update = function(objects){
-  this.status.text = objects[this.playerId].score;
+Score.prototype.update = function(room){
+  this.status.text = room.objects[this.playerId].score;
 };
 module.exports = Score;

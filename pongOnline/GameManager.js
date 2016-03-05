@@ -13,7 +13,7 @@ function GameManager(io, roomManager){
       var statuses = [];
       for(var object in room.objects){
         var obj = room.objects[object];
-        obj.update(room.objects);
+        obj.update(room);
         statuses.push(obj.status);
       }
       io.to(room.id).emit('update',statuses);

@@ -27,10 +27,14 @@ function Player(id,position){
   this.id = id;
   this.score = 0;
   this.keypress = {};
+  this.mouse = {
+    move:{x:undefined,y:undefined},
+    click:{x:undefined,y:undefined}
+  };
 }
 Player.prototype = new BaseObejct();
 Player.prototype.constructor = Player;
-Player.prototype.update = function(objects){
+Player.prototype.update = function(room){
   if(this.keypress[UP] && this.status.y - UNIT >= 0 + SETTINGS.BORDER_WIDTH)
     this.status.y -= UNIT;
   if(this.keypress[DOWN] && this.status.y + this.status.height + UNIT <= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)

@@ -19,7 +19,7 @@ function Ball(player0Id, player1Id){
 }
 Ball.prototype = new BaseObejct();
 Ball.prototype.constructor = Ball;
-Ball.prototype.update = function(objects){
+Ball.prototype.update = function(room){
   if(this.move){
     this.status.x += this.dx*this.speed;
     this.status.y += this.dy*this.speed;
@@ -33,12 +33,12 @@ Ball.prototype.update = function(objects){
     */
 
     if(this.status.x <= 0 - this.status.width*2){
-      objects[this.playerIds[1]].score++;
+      room.objects[this.playerIds[1]].score++;
       this.dx = Math.abs(this.dx);
       this.initialize();
     }
     if(this.status.x + this.status.width >= SETTINGS.WIDTH + this.status.width*2){
-      objects[this.playerIds[0]].score++;
+      room.objects[this.playerIds[0]].score++;
       this.dx = -Math.abs(this.dx);
       this.initialize();
     }
@@ -47,9 +47,9 @@ Ball.prototype.update = function(objects){
     if(this.status.y + this.status.height >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
     this.dy = -Math.abs(this.dy);
 
-    for(var object in objects){
-      if(objects[object].role == "player"){
-        var playerStat = objects[object].status;
+    for(var object in room.objects){
+      if(room.objects[object].role == "player"){
+        var playerStat = room.objects[object].status;
         var collusionType = ballCollusionCheck(this.status, playerStat, this.dx*this.speed);
         switch(collusionType){
           case COLLUSION_TYPE.NO_COLLUSION:
