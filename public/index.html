@@ -29,56 +29,18 @@ $(function(){
   });
 
   socket.on('in', function(){
-    clearInterval(waiting.interval);
-    $('body').on('keydown', function(e){
-      e.preventDefault();
-      socket.emit('keydown', e.keyCode);
-    });
-    $('body').on('keyup', function(e){
-      e.preventDefault();
-      socket.emit('keyup', e.keyCode);
-    });
-    $('canvas').on('mousemove', function(e){
-      e.preventDefault();
-      socket.emit('mousemove', e.offsetX, e.offsetY);
-    });
-    $('canvas').on('click', function(e){
-      e.preventDefault();
-      socket.emit('click', e.offsetX, e.offsetY);
-    });
+    waiting.destroy();
+    playing.initialize();
   });
 
+  var serverObjects;
   socket.on('update', function(statuses){
-    if(GAME_SETTINGS == null) return;
-    drawBackground();
-    drawNet();
-    drawBorder();
-    statuses.forEach(function(status){
-      switch(status.shape){
-        case "rectangle":
-          ctx.fillStyle = status.color;
-          ctx.fillRect(status.x,status.y,status.width,status.height);
-          break;
-        case "circle":
-          ctx.fillStyle = status.color;
-          ctx.beginPath();
-          ctx.arc(status.x,status.y,status.r,0,2*Math.PI);
-          ctx.stroke();
-          ctx.fill();
-          break;
-        case "text":
-          ctx.font = status.size+"px "+status.font;
-          ctx.fillStyle = status.color;
-          ctx.textAlign = status.textAlign;
-          ctx.fillText(status.text,status.x,status.y);
-          break;
-      }
-    });
+    serverObjects = statuses;
   });
 
   socket.on('destroy', function(){
+    playing.destroy();
     opponentLeft.initialize();
-    $('body').off();
   });
 
   function drawBackground(globalAlpha,color){
@@ -231,6 +193,65 @@ $(function(){
       clearInterval(waiting.interval);
     };
   })();
+
+
+    var playing = new (function(){
+      var playing = this;
+      playing.interval = null;
+
+      playing.initialize = function(){
+        $('body').on('keydown', function(e){
+          e.preventDefault();
+          socket.emit('keydown', e.keyCode);
+        });
+        $('body').on('keyup', function(e){
+          e.preventDefault();
+          socket.emit('keyup', e.keyCode);
+        });
+        $('canvas').on('mousemove', function(e){
+          e.preventDefault();
+          console.log(e.offsetX, e.offsetY);
+          socket.emit('mousemove', e.offsetX, e.offsetY);
+        });
+        $('canvas').on('click', function(e){
+          e.preventDefault();
+          console.log(e.offsetX, e.offsetY);
+          socket.emit('click', e.offsetX, e.offsetY);
+        });
+        playing.interval = setInterval(playing.loop,INTERVAL);
+      };
+      playing.loop = function(){
+        drawBackground();
+        drawNet();
+        drawBorder();
+        serverObjects.forEach(function(status){
+          switch(status.shape){
+            case "rectangle":
+              ctx.fillStyle = status.color;
+              ctx.fillRect(status.x,status.y,status.width,status.height);
+              break;
+            case "circle":
+              ctx.fillStyle = status.color;
+              ctx.beginPath();
+              ctx.arc(status.x,status.y,status.r,0,2*Math.PI);
+              ctx.stroke();
+              ctx.fill();
+              break;
+            case "text":
+              ctx.font = status.size+"px "+status.font;
+              ctx.fillStyle = status.color;
+              ctx.textAlign = status.textAlign;
+              ctx.fillText(status.text,status.x,status.y);
+              break;
+          }
+        });
+      };
+      playing.destroy = function(){
+        clearInterval(playing.interval);
+        $('body').off();
+        $('canvas').off();
+      };
+    })();
 
   var opponentLeft = new (function(){
     var opponentLeft = this;
