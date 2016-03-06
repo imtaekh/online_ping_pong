@@ -14,15 +14,16 @@ function Score(id,position){
   BaseObejct.call(this);
   this.playerId = id;
   this.status.shape = "text";
-  this.status.text = {};
-  this.status.text.color = {fill:"#123456"};
-  this.status.text.font = "Arial";
-  this.status.text.textAlign = "center";
-  this.status.text.textBaseline = "middle";
-  this.status.text.size = SETTINGS.SCORE.SIZE;
-  this.status.text.message = undefined;
-  this.status.text.x = xPos;
-  this.status.text.y = SETTINGS.SCORE.Y;
+  this.status.text = {
+    color : {fill:"#123456"},
+    font : "Arial",
+    textAlign : "center",
+    textBaseline : "middle",
+    size : SETTINGS.SCORE.SIZE,
+    message : undefined,
+    x : xPos,
+    y : SETTINGS.SCORE.Y
+  };
 }
 Score.prototype = new BaseObejct();
 Score.prototype.constructor = Score;
