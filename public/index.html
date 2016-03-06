@@ -12,13 +12,17 @@ $(function(){
   var GAME_SETTINGS = null;
   var INTERVAL = 10;
 
+  var socket = io();
   var canvas = document.createElement('canvas');
-  var ctx = canvas.getContext("2d");
   $(canvas).css("display", "block");
   $(canvas).css("border", "black 1px solid");
   $(canvas).css("margin", "0 auto");
-
-  var socket = io();
+  var ctx = canvas.getContext("2d");
+  var serverObjects;
+  var mainLoop = function(){};
+  var interval = setInterval(function(){
+    mainLoop();
+  },INTERVAL);
 
   socket.on('connected', function(SERVER_GAME_SETTINGS){
     GAME_SETTINGS = SERVER_GAME_SETTINGS;
@@ -33,7 +37,6 @@ $(function(){
     playing.initialize();
   });
 
-  var serverObjects;
   socket.on('update', function(statuses){
     serverObjects = statuses;
   });
@@ -71,7 +74,6 @@ $(function(){
 
   var start = new (function(){
     var start = this;
-    start.interval = null;
 
     start.button1 = new ButtonObject();
     start.button1.setEvents = function(){
@@ -130,7 +132,7 @@ $(function(){
           dir: 1,
         }
       });
-      start.interval = setInterval(start.loop,INTERVAL)
+      mainLoop = start.loop;
     };
     start.loop = function(){
       start.button1.update();
@@ -139,7 +141,6 @@ $(function(){
     };
     start.destroy = function(){
       $(canvas).off();
-      clearInterval(start.interval);
     };
     start.toWaiting = function(){
       start.destroy();
@@ -150,7 +151,6 @@ $(function(){
 
   var waiting = new (function(){
     var waiting = this;
-    waiting.interval = null;
 
     waiting.text1 = new TextObject();
     waiting.text1.update = function(){
@@ -182,7 +182,7 @@ $(function(){
           dir: 1,
         }
       });
-      waiting.interval = setInterval(waiting.loop,INTERVAL)
+      mainLoop = waiting.loop;
     };
     waiting.loop = function(){
       waiting.text1.update();
@@ -190,68 +190,65 @@ $(function(){
       waiting.text1.draw();
     };
     waiting.destroy = function(){
-      clearInterval(waiting.interval);
-    };
+    }
   })();
 
+  var playing = new (function(){
+    var playing = this;
+    playing.interval = null;
 
-    var playing = new (function(){
-      var playing = this;
-      playing.interval = null;
+    playing.initialize = function(){
+      $('body').on('keydown', function(e){
+        e.preventDefault();
+        socket.emit('keydown', e.keyCode);
+      });
+      $('body').on('keyup', function(e){
+        e.preventDefault();
+        socket.emit('keyup', e.keyCode);
+      });
+      $('canvas').on('mousemove', function(e){
+        e.preventDefault();
+        socket.emit('mousemove', e.offsetX, e.offsetY);
+      });
+      $('canvas').on('click', function(e){
+        e.preventDefault();
+        socket.emit('click', e.offsetX, e.offsetY);
+      });
+      mainLoop = playing.loop;
+    };
+    playing.loop = function(){
 
-      playing.initialize = function(){
-        $('body').on('keydown', function(e){
-          e.preventDefault();
-          socket.emit('keydown', e.keyCode);
-        });
-        $('body').on('keyup', function(e){
-          e.preventDefault();
-          socket.emit('keyup', e.keyCode);
-        });
-        $('canvas').on('mousemove', function(e){
-          e.preventDefault();
-          console.log(e.offsetX, e.offsetY);
-          socket.emit('mousemove', e.offsetX, e.offsetY);
-        });
-        $('canvas').on('click', function(e){
-          e.preventDefault();
-          console.log(e.offsetX, e.offsetY);
-          socket.emit('click', e.offsetX, e.offsetY);
-        });
-        playing.interval = setInterval(playing.loop,INTERVAL);
-      };
-      playing.loop = function(){
-        drawBackground();
-        drawNet();
-        drawBorder();
-        serverObjects.forEach(function(status){
-          switch(status.shape){
-            case "rectangle":
-              ctx.fillStyle = status.color;
-              ctx.fillRect(status.x,status.y,status.width,status.height);
-              break;
-            case "circle":
-              ctx.fillStyle = status.color;
-              ctx.beginPath();
-              ctx.arc(status.x,status.y,status.r,0,2*Math.PI);
-              ctx.stroke();
-              ctx.fill();
-              break;
-            case "text":
-              ctx.font = status.size+"px "+status.font;
-              ctx.fillStyle = status.color;
-              ctx.textAlign = status.textAlign;
-              ctx.fillText(status.text,status.x,status.y);
-              break;
-          }
-        });
-      };
-      playing.destroy = function(){
-        clearInterval(playing.interval);
-        $('body').off();
-        $('canvas').off();
-      };
-    })();
+      if(!serverObjects) return;
+      drawBackground();
+      drawNet();
+      drawBorder();
+      serverObjects.forEach(function(status){
+        switch(status.shape){
+          case "rectangle":
+            ctx.fillStyle = status.color;
+            ctx.fillRect(status.x,status.y,status.width,status.height);
+            break;
+          case "circle":
+            ctx.fillStyle = status.color;
+            ctx.beginPath();
+            ctx.arc(status.x,status.y,status.r,0,2*Math.PI);
+            ctx.stroke();
+            ctx.fill();
+            break;
+          case "text":
+            ctx.font = status.size+"px "+status.font;
+            ctx.fillStyle = status.color;
+            ctx.textAlign = status.textAlign;
+            ctx.fillText(status.text,status.x,status.y);
+            break;
+        }
+      });
+    };
+    playing.destroy = function(){
+      $('body').off();
+      $('canvas').off();
+    };
+  })();
 
   var opponentLeft = new (function(){
     var opponentLeft = this;
@@ -308,7 +305,7 @@ $(function(){
           count: 0,
         }
       });
-      opponentLeft.interval = setInterval(opponentLeft.loop,INTERVAL)
+      mainLoop = opponentLeft.loop;
     };
     opponentLeft.loop = function(){
       opponentLeft.text1.update();
@@ -335,7 +332,6 @@ $(function(){
       ctx.putImageData(opponentLeft.imgData,0,0);
     }
     opponentLeft.destroy = function(){
-      clearInterval(opponentLeft.interval);
     };
   })();
 })
