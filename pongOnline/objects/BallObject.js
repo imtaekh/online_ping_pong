@@ -1,4 +1,4 @@
-var SETTINGS = require("./SETTINGS.js");
+var SETTINGS = require("../SETTINGS.js");
 var BaseObejct = require("./BaseObject.js");
 
 var COLLUSION_TYPE = { NO_COLLUSION: -1, VERTICAL: 1, HORIZONTAL: 2};
@@ -11,54 +11,57 @@ function Ball(player0Id, player1Id){
   this.speed = 2;
   this.move = true;
   this.status.shape = "rectangle";
-  this.status.x = (SETTINGS.WIDTH-SETTINGS.BALL.WIDTH)/2;
-  this.status.y = (SETTINGS.HEIGHT-SETTINGS.BALL.HEIGHT)/2;
-  this.status.width = SETTINGS.BALL.WIDTH;
-  this.status.height = SETTINGS.BALL.HEIGHT;
-  this.status.color = "#000000";
+  this.status.rect = {
+    x : (SETTINGS.WIDTH-SETTINGS.BALL.WIDTH)/2,
+    y : (SETTINGS.HEIGHT-SETTINGS.BALL.HEIGHT)/2,
+    width : SETTINGS.BALL.WIDTH,
+    height : SETTINGS.BALL.HEIGHT,
+    color : {fill:"#000000"},
+  };
 }
 Ball.prototype = new BaseObejct();
 Ball.prototype.constructor = Ball;
 Ball.prototype.update = function(room){
-  if(this.move){
-    this.status.x += this.dx*this.speed;
-    this.status.y += this.dy*this.speed;
+  if(this.move&&room.status=="playing"){
+    var ball = this.status.rect;
+    ball.x += this.dx*this.speed;
+    ball.y += this.dy*this.speed;
 
     /* dedug mode
-    if(this.status.x <= 50 || this.status.x >= SETTINGS.WIDTH - 50 ){
+    if(ball.x <= 50 || ball.x >= SETTINGS.WIDTH - 50 ){
     this.speed = 0.2;
       } else {
       this.speed = 2;
     }
     */
 
-    if(this.status.x <= 0 - this.status.width*2){
+    if(ball.x <= 0 - ball.width*2){
       room.objects[this.playerIds[1]].score++;
       this.dx = Math.abs(this.dx);
       this.initialize();
     }
-    if(this.status.x + this.status.width >= SETTINGS.WIDTH + this.status.width*2){
+    if(ball.x + ball.width >= SETTINGS.WIDTH + ball.width*2){
       room.objects[this.playerIds[0]].score++;
       this.dx = -Math.abs(this.dx);
       this.initialize();
     }
-    if(this.status.y <= 0 + SETTINGS.BORDER_WIDTH)
+    if(ball.y <= 0 + SETTINGS.BORDER_WIDTH)
     this.dy = Math.abs(this.dy);
-    if(this.status.y + this.status.height >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
+    if(ball.y + ball.height >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
     this.dy = -Math.abs(this.dy);
 
     for(var object in room.objects){
       if(room.objects[object].role == "player"){
-        var playerStat = room.objects[object].status;
-        var collusionType = ballCollusionCheck(this.status, playerStat, this.dx*this.speed);
+        var playerStat = room.objects[object].status.rect;
+        var collusionType = ballCollusionCheck(ball, playerStat, this.dx*this.speed);
         switch(collusionType){
           case COLLUSION_TYPE.NO_COLLUSION:
           break;
           case COLLUSION_TYPE.VERTICAL:
-          this.dy = bounce(this.status.y+this.status.height/2, playerStat.y+playerStat.height/2, this.dy);
+          this.dy = bounce(ball.y+ball.height/2, playerStat.y+playerStat.height/2, this.dy);
           break;
           case COLLUSION_TYPE.HORIZONTAL:
-          this.dx = bounce(this.status.x+this.status.width/2, playerStat.x+playerStat.width/2, this.dx);
+          this.dx = bounce(ball.x+ball.width/2, playerStat.x+playerStat.width/2, this.dx);
           break;
         }
       }
@@ -67,8 +70,9 @@ Ball.prototype.update = function(room){
 };
 
 Ball.prototype.initialize = function(objects){
-  this.status.x = (SETTINGS.WIDTH-SETTINGS.BALL.WIDTH)/2;
-  this.status.y = (SETTINGS.HEIGHT-SETTINGS.BALL.HEIGHT)/2;
+  var ball = this.status.rect;
+  ball.x = (SETTINGS.WIDTH-SETTINGS.BALL.WIDTH)/2;
+  ball.y = (SETTINGS.HEIGHT-SETTINGS.BALL.HEIGHT)/2;
 };
 
 module.exports = Ball;

@@ -16,7 +16,7 @@ var SETTINGS = {
     WIDTH : 6
   },
   SCORE : {
-    Y : 50,
+    Y : 40,
     SIZE : 30,
     GAP : 50
   }

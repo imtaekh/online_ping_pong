@@ -1,7 +1,6 @@
-var Player = require("./PlayerObject.js");
-var Ball = require("./BallObject.js");
-var Score = require("./ScoreObject.js");
-
+var Player = require("./objects/PlayerObject.js");
+var Ball = require("./objects/BallObject.js");
+var Score = require("./objects/ScoreObject.js");
 
 var INTERVAL = 10;
 
@@ -15,7 +14,7 @@ function GameManager(io, roomManager){
       var statuses = [];
       switch(room.status){
         case "created":
-          room.status="ready";
+          room.status="playing";
           room.objects[room.players[0].id] = new Player(room.players[0].id, "LEFT");
           room.objects[room.players[1].id] = new Player(room.players[1].id, "RIGHT");
           room.objects.player0Score = new Score(room.players[0].id, "LEFT");
