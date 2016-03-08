@@ -18,7 +18,7 @@ $(function(){
   $(canvas).css("border", "black 1px solid");
   $(canvas).css("margin", "0 auto");
   var ctx = canvas.getContext("2d");
-  var serverObjects;
+  var serverObjects=[];
   var mainLoop = function(){};
   var interval = setInterval(function(){
     mainLoop();
@@ -32,8 +32,12 @@ $(function(){
     start.initialize();
   });
 
-  socket.on('in', function(){
+  socket.on('ready', function(position){
     waiting.destroy();
+    ready.initialize(position);
+  });
+  socket.on('playing', function(position){
+    ready.destroy();
     playing.initialize();
   });
 
@@ -41,10 +45,28 @@ $(function(){
     serverObjects = statuses;
   });
 
-  socket.on('destroy', function(){
-    playing.destroy();
-    opponentLeft.initialize();
+  socket.on('destroy', function(message){
+    ready.destroy();
+    backToTitle.initialize(message);
   });
+
+  function drawObjects(status){
+    switch(status.shape){
+      case "rectangle":
+        drawRect(ctx,status.rect);
+        break;
+      case "circle":
+        ctx.fillStyle = status.color;
+        ctx.beginPath();
+        ctx.arc(status.x,status.y,status.r,0,2*Math.PI);
+        ctx.stroke();
+        ctx.fill();
+        break;
+      case "text":
+        drawText(ctx,status.text);
+        break;
+    }
+  }
 
   function drawBackground(globalAlpha,color){
     ctx.save();
@@ -76,15 +98,8 @@ $(function(){
     var start = this;
 
     start.button1 = new ButtonObject();
-    start.button1.setEvents = function(){
-      $(canvas).on("click",this.click);
-      $(canvas).on("mousemove",this.mousemove);
-    };
-    start.button1.click = function(e){
-      var rect = start.button1.data.rect;
-      if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
-        start.toWaiting();
-      }
+    start.button1.click = function(){
+      start.toWaiting();
     };
     start.button1.update = function(){
       var text = this.data.text;
@@ -94,14 +109,6 @@ $(function(){
         animation.dir *= -1;
       }
       text.globalAlpha = 0.2 + 0.7*(animation.count/100);
-    };
-    start.button1.mousemove = function(e){
-      var rect = start.button1.data.rect;
-      var text = start.button1.data.text;
-      var mouseover = pointSquareCollusionCheck(e.offsetX, e.offsetY, rect);
-
-      rect.color = mouseover?rect.colorData.mouseover  :rect.colorData.default;
-      text.color = mouseover?text.colorData.mouseover  :text.colorData.default;
     };
 
     start.initialize = function(){
@@ -204,9 +211,132 @@ $(function(){
     }
   })();
 
+  var ready = new (function(){
+    var ready = this;
+    ready.interval = null;
+
+    ready.text1 = new TextObject();
+
+    ready.text2 = new TextObject();
+
+    ready.button1 = new ButtonObject();
+    ready.button1.click = function(e){
+      socket.emit('ready');
+      ready.text2.data.text.message = "WAITING FOR OPPONENT TO BE READY";
+      ready.button1.data = null;
+    };
+    ready.button1.update = function(){
+      if(!this.data) return;
+      var text = this.data.text;
+      var animation = this.data.animation;
+      animation.count += animation.dir;
+      if(animation.count <= 0 || animation.count >= animation.maxCount ){
+        animation.dir *= -1;
+      }
+      text.globalAlpha = 0.5 + 0.5*(animation.count/100);
+    };
+
+    ready.initialize = function(position){
+      var xPos
+      switch(position){
+        case "left":
+          message = "< YOU  "
+          xPos = GAME_SETTINGS.WIDTH*1/4;
+          break;
+        case "right":
+          message = "  YOU >"
+          xPos = GAME_SETTINGS.WIDTH*3/4;
+          break;
+      }
+
+      ready.text1.initialize(canvas,ctx,GAME_SETTINGS,{
+        text:{
+          x: xPos,
+          y: undefined,
+          size: 25,
+          font: "Arial",
+          textBaseline: "middle",
+          textAlign: "center",
+          lineWidth: 2,
+          message: message,
+          globalAlpha: undefined,
+          color: {fill: undefined, stroke: undefined},
+          colorData: {
+            default: {fill: "#fc6e51", stroke: undefined}
+          }
+        }
+      });
+      ready.text2.initialize(canvas,ctx,GAME_SETTINGS,{
+        text:{
+          x: undefined,
+          y: GAME_SETTINGS.HEIGHT-80,
+          size: 20,
+          font: "Arial",
+          textBaseline: "middle",
+          textAlign: "center",
+          lineWidth: 5,
+          message: "CLICK [READY] TO GET READY",
+          globalAlpha: undefined,
+          color: {fill: undefined, stroke: undefined},
+          colorData: {
+            default: {fill: "#434a54", stroke: "#FFFFFF"}
+          }
+        }
+      });
+      ready.button1.initialize(canvas,ctx,GAME_SETTINGS,{
+        rect: {
+          x: xPos,
+          y: GAME_SETTINGS.HEIGHT/2+40,
+          width: 150,
+          height: 40,
+          lineWidth: 2,
+          color: {fill:undefined, stroke:undefined},
+          colorData: {
+            default: {fill:"#ffce54", stroke:undefined},
+            mouseover: {fill:"#f6bb42", stroke:undefined}
+          }
+        },
+        text:{
+          x: xPos,
+          y: GAME_SETTINGS.HEIGHT/2+40,
+          size: 28,
+          font: "Arial",
+          textBaseline: "middle",
+          textAlign: "center",
+          lineWidth: undefined,
+          message: "READY",
+          color: {fill:undefined, stroke:undefined},
+          colorData: {
+            default: {fill:"#123456", stroke:undefined},
+            mouseover: {fill:"#ffffff", stroke:undefined}
+          }
+        },
+        animation: {
+          maxCount: 100,
+          count: 0,
+          dir: 1,
+        }
+      });
+      mainLoop = ready.loop;
+    };
+    ready.loop = function(){
+      ready.button1.update();
+      drawBackground();
+      drawNet();
+      drawBorder();
+      serverObjects.forEach(drawObjects);
+      ready.button1.draw();
+      ready.text1.draw();
+      ready.text2.draw();
+    };
+    ready.destroy = function(){
+      $('body').off();
+      $('canvas').off();
+    };
+  })();
+
   var playing = new (function(){
     var playing = this;
-    playing.interval = null;
 
     playing.initialize = function(){
       $('body').on('keydown', function(e){
@@ -232,28 +362,10 @@ $(function(){
       mainLoop = playing.loop;
     };
     playing.loop = function(){
-
-      if(!serverObjects) return;
       drawBackground();
       drawNet();
       drawBorder();
-      serverObjects.forEach(function(status){
-        switch(status.shape){
-          case "rectangle":
-            drawRect(ctx,status.rect);
-            break;
-          case "circle":
-            ctx.fillStyle = status.color;
-            ctx.beginPath();
-            ctx.arc(status.x,status.y,status.r,0,2*Math.PI);
-            ctx.stroke();
-            ctx.fill();
-            break;
-          case "text":
-            drawText(ctx,status.text);
-            break;
-        }
-      });
+      serverObjects.forEach(drawObjects);
     };
     playing.destroy = function(){
       $('body').off();
@@ -261,18 +373,18 @@ $(function(){
     };
   })();
 
-  var opponentLeft = new (function(){
-    var opponentLeft = this;
-    opponentLeft.interval = null;
-    opponentLeft.text1 = new TextObject();
-    opponentLeft.text1.update = function(){
+  var backToTitle = new (function(){
+    var backToTitle = this;
+    backToTitle.interval = null;
+    backToTitle.text1 = new TextObject();
+    backToTitle.text1.update = function(){
       var text = this.data.text;
       var animation = this.data.animation;
       animation.count++;
       text.globalAlpha = 0.2 + 0.7*(animation.count/100);
     };
-    opponentLeft.text2 = new TextObject();
-    opponentLeft.text2.update = function(){
+    backToTitle.text2 = new TextObject();
+    backToTitle.text2.update = function(){
       var text = this.data.text;
       var animation = this.data.animation;
       if(animation.count == 0) text.color = undefined;
@@ -283,9 +395,9 @@ $(function(){
       if(animation.count > 100) text.globalAlpha = ((animation.count-100)/150);
     };
 
-    opponentLeft.initialize = function(){
-      opponentLeft.count =0;
-      opponentLeft.text1.initialize(canvas,ctx,GAME_SETTINGS,{
+    backToTitle.initialize = function(message){
+      backToTitle.count =0;
+      backToTitle.text1.initialize(canvas,ctx,GAME_SETTINGS,{
         text:{
           x: undefined,
           y: GAME_SETTINGS.HEIGHT/2-20,
@@ -293,8 +405,8 @@ $(function(){
           font: "Arial",
           textBaseline: "middle",
           textAlign: "center",
-          lineWidth: 2,
-          message: "OPPONENT LEFT!",
+          lineWidth: undefined,
+          message: message?message:"OPPONENT LEFT!",
           globalAlpha: undefined,
           color: {fill: undefined, stroke: undefined},
           colorData: {default:{fill: "#000000", stroke: undefined}}
@@ -304,7 +416,7 @@ $(function(){
           count: 0,
         }
       });
-      opponentLeft.text2.initialize(canvas,ctx,GAME_SETTINGS,{
+      backToTitle.text2.initialize(canvas,ctx,GAME_SETTINGS,{
         text:{
           x: undefined,
           y: GAME_SETTINGS.HEIGHT/2+20,
@@ -312,7 +424,7 @@ $(function(){
           font: "Arial",
           textBaseline: "middle",
           textAlign: "center",
-          lineWidth: 2,
+          lineWidth: undefined,
           message: "GOING BACK TO START..",
           globalAlpha: undefined,
           color: {fill: undefined, stroke: undefined},
@@ -322,33 +434,33 @@ $(function(){
           count: 0,
         }
       });
-      mainLoop = opponentLeft.loop;
+      mainLoop = backToTitle.loop;
     };
-    opponentLeft.loop = function(){
-      opponentLeft.text1.update();
-      opponentLeft.text2.update();
-      opponentLeft.update();
-      opponentLeft.draw();
-      opponentLeft.text1.draw();
-      opponentLeft.text2.draw();
+    backToTitle.loop = function(){
+      backToTitle.text1.update();
+      backToTitle.text2.update();
+      backToTitle.update();
+      backToTitle.draw();
+      backToTitle.text1.draw();
+      backToTitle.text2.draw();
     };
-    opponentLeft.count = undefined;
-    opponentLeft.imgData = undefined;
-    opponentLeft.update = function(){
-      if(opponentLeft.count == 0){
+    backToTitle.count = undefined;
+    backToTitle.imgData = undefined;
+    backToTitle.update = function(){
+      if(backToTitle.count == 0){
         drawBackground(0.8);
-        opponentLeft.imgData=ctx.getImageData(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
+        backToTitle.imgData=ctx.getImageData(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
       }
-      opponentLeft.count++
-      if(opponentLeft.count >= 300){
-        opponentLeft.destroy();
+      backToTitle.count++
+      if(backToTitle.count >= 300){
+        backToTitle.destroy();
         start.initialize();
       }
     }
-    opponentLeft.draw = function(){
-      ctx.putImageData(opponentLeft.imgData,0,0);
+    backToTitle.draw = function(){
+      ctx.putImageData(backToTitle.imgData,0,0);
     }
-    opponentLeft.destroy = function(){
+    backToTitle.destroy = function(){
     };
   })();
 })
@@ -361,7 +473,6 @@ TextObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS,data){
   this.ctx = ctx;
   this.GAME_SETTINGS = GAME_SETTINGS;
   this.data = data;
-  if(this.setEvents) this.setEvents();
 
   var text = this.data.text;
   var animation = data.animation;
@@ -371,9 +482,12 @@ TextObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS,data){
 };
 
 TextObject.prototype.draw = function(){
+  if(!this.data) return;
   drawText(this.ctx, this.data.text);
 };
+TextObject.prototype.update = function(){
 
+}
 function ButtonObject(){
   TextObject.call(this);
 };
@@ -383,19 +497,40 @@ ButtonObject.prototype.constructor = ButtonObject;
 ButtonObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS,data){
   TextObject.prototype.initialize.call(this,canvas,ctx,GAME_SETTINGS,data);
   var rect = this.data.rect;
-  rect.x = rect.x?rect.x:(GAME_SETTINGS.WIDTH - rect.width)/2;
-  rect.y = rect.y?rect.y:(GAME_SETTINGS.HEIGHT - rect.height)/2;
+  rect.x = rect.x?rect.x:GAME_SETTINGS.WIDTH/2;
+  rect.y = rect.y?rect.y:GAME_SETTINGS.HEIGHT/2;
   rect.color = rect.colorData.default;
+  if(this.setEvents) this.setEvents(canvas);
 };
+ButtonObject.prototype.setEvents = function(canvas){
+  buttonObject = this;
+  $(canvas).on("click",function(e){
+    var rect = buttonObject.data.rect;
+    if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
+      buttonObject.click();
+    }
+  });
+  $(canvas).on("mousemove",function(e){
+    buttonObject.mousemove(e);
+  });
+};
+ButtonObject.prototype.mousemove = function(e){
+  var rect = this.data.rect;
+  var text = this.data.text;
+  var mouseover = pointSquareCollusionCheck(e.offsetX, e.offsetY, rect);
 
+  rect.color = mouseover?rect.colorData.mouseover:rect.colorData.default;
+  text.color = mouseover?text.colorData.mouseover:text.colorData.default;
+};
 ButtonObject.prototype.draw = function(){
-  drawRect(this.ctx,this.data.rect);
+  if(!this.data) return;
+  drawRect(this.ctx, this.data.rect);
   TextObject.prototype.draw.call(this);
 };
 
 //Common Functions
 function pointSquareCollusionCheck(x,y,square){
-  if(x >= square.x && x <= square.x + square.width && y >= square.y && y <= square.y + square.height )
+  if(x >= square.x-square.width/2 && x <= square.x+square.width/2 && y >= square.y-square.height/2 && y <= square.y+square.height/2 )
     return true;
 }
 function drawRect(ctx, rect){
@@ -406,12 +541,12 @@ function drawRect(ctx, rect){
   ctx.globalAlpha = rect.globalAlpha?text.globalAlpha:1;
   if(rect.color.fill){
     ctx.fillStyle = rect.color.fill;
-    ctx.fillRect(rect.x,rect.y,rect.width,rect.height);
+    ctx.fillRect(rect.x-rect.width/2,rect.y-rect.height/2,rect.width,rect.height);
   }
   if(rect.color.stroke){
     ctx.strokeStyle = rect.color.stroke;
     ctx.lineWidth = rect.lineWidth;
-    ctx.rect(rect.x,rect.y,rect.width,rect.height);
+    ctx.rect(rect.x-rect.width/2,rect.y-rect.height/2,rect.width,rect.height);
     ctx.stroke();
   }
   ctx.restore();
@@ -425,14 +560,14 @@ function drawText(ctx, text){
   ctx.textAlign = text.textAlign;
   ctx.textBaseline = text.textBaseline;
   ctx.globalAlpha = text.globalAlpha?text.globalAlpha:1;
-  if(text.color.fill){
-    ctx.fillStyle = text.color.fill;
-    ctx.fillText(text.message, text.x, text.y);
-  }
   if(text.color.stroke){
     ctx.strokeStyle = text.color.stroke;
     ctx.lineWidth = text.lineWidth;
     ctx.strokeText(text.message, text.x, text.y);
+  }
+  if(text.color.fill){
+    ctx.fillStyle = text.color.fill;
+    ctx.fillText(text.message, text.x, text.y);
   }
 
   ctx.restore();

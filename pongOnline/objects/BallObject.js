@@ -12,8 +12,8 @@ function Ball(player0Id, player1Id){
   this.move = true;
   this.status.shape = "rectangle";
   this.status.rect = {
-    x : (SETTINGS.WIDTH-SETTINGS.BALL.WIDTH)/2,
-    y : (SETTINGS.HEIGHT-SETTINGS.BALL.HEIGHT)/2,
+    x : SETTINGS.WIDTH/2,
+    y : SETTINGS.HEIGHT/2,
     width : SETTINGS.BALL.WIDTH,
     height : SETTINGS.BALL.HEIGHT,
     color : {fill:"#000000"},
@@ -40,14 +40,14 @@ Ball.prototype.update = function(room){
       this.dx = Math.abs(this.dx);
       this.initialize();
     }
-    if(ball.x + ball.width >= SETTINGS.WIDTH + ball.width*2){
+    if(ball.x >= SETTINGS.WIDTH + ball.width*2){
       room.objects[this.playerIds[0]].score++;
       this.dx = -Math.abs(this.dx);
       this.initialize();
     }
-    if(ball.y <= 0 + SETTINGS.BORDER_WIDTH)
+    if(ball.y - ball.height/2 <= 0 + SETTINGS.BORDER_WIDTH)
     this.dy = Math.abs(this.dy);
-    if(ball.y + ball.height >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
+    if(ball.y + ball.height/2 >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
     this.dy = -Math.abs(this.dy);
 
     for(var object in room.objects){
@@ -71,8 +71,8 @@ Ball.prototype.update = function(room){
 
 Ball.prototype.initialize = function(objects){
   var ball = this.status.rect;
-  ball.x = (SETTINGS.WIDTH-SETTINGS.BALL.WIDTH)/2;
-  ball.y = (SETTINGS.HEIGHT-SETTINGS.BALL.HEIGHT)/2;
+  ball.x = SETTINGS.WIDTH/2;
+  ball.y = SETTINGS.HEIGHT/2;
 };
 
 module.exports = Ball;
@@ -82,23 +82,23 @@ function bounce (x, y, v){
 }
 
 function ballCollusionCheck(ballStat,playerStat,dx){
-  if(pointSquareCollusionCheck(      ballStat.x                     , ballStat.y                  , playerStat)){
-    return pointSquareCollusionCheck(ballStat.x - dx                , ballStat.y                  , playerStat)?
+  if(pointSquareCollusionCheck(      ballStat.x - ballStat.width/2     , ballStat.y - ballStat.height/2, playerStat)){
+    return pointSquareCollusionCheck(ballStat.x - ballStat.width/2 - dx, ballStat.y - ballStat.height/2, playerStat)?
       COLLUSION_TYPE.VERTICAL:
       COLLUSION_TYPE.HORIZONTAL;
   }
-  if(pointSquareCollusionCheck(      ballStat.x      + ballStat.width, ballStat.y                  , playerStat)){
-    return pointSquareCollusionCheck(ballStat.x - dx + ballStat.width, ballStat.y                  , playerStat)?
+  if(pointSquareCollusionCheck(      ballStat.x + ballStat.width/2     , ballStat.y - ballStat.height/2, playerStat)){
+    return pointSquareCollusionCheck(ballStat.x + ballStat.width/2 - dx, ballStat.y - ballStat.height/2, playerStat)?
       COLLUSION_TYPE.VERTICAL:
       COLLUSION_TYPE.HORIZONTAL;
   }
-  if(pointSquareCollusionCheck(      ballStat.x                      , ballStat.y + ballStat.height, playerStat)){
-    return pointSquareCollusionCheck(ballStat.x - dx                 , ballStat.y + ballStat.height, playerStat)?
+  if(pointSquareCollusionCheck(      ballStat.x - ballStat.width/2     , ballStat.y + ballStat.height/2, playerStat)){
+    return pointSquareCollusionCheck(ballStat.x - ballStat.width/2 - dx, ballStat.y + ballStat.height/2, playerStat)?
       COLLUSION_TYPE.VERTICAL:
       COLLUSION_TYPE.HORIZONTAL;
   }
-  if(pointSquareCollusionCheck(      ballStat.x      + ballStat.width, ballStat.y + ballStat.height, playerStat)){
-    return pointSquareCollusionCheck(ballStat.x - dx + ballStat.width, ballStat.y + ballStat.height, playerStat)?
+  if(pointSquareCollusionCheck(      ballStat.x + ballStat.width/2     , ballStat.y + ballStat.height/2, playerStat)){
+    return pointSquareCollusionCheck(ballStat.x + ballStat.width/2 - dx, ballStat.y + ballStat.height/2, playerStat)?
       COLLUSION_TYPE.VERTICAL:
       COLLUSION_TYPE.HORIZONTAL;
   }
@@ -106,6 +106,6 @@ function ballCollusionCheck(ballStat,playerStat,dx){
 }
 
 function pointSquareCollusionCheck(x,y,square){
-  if(x >= square.x && x <= square.x + square.width && y >= square.y && y <= square.y + square.height )
+  if(x >= square.x-square.width/2 && x <= square.x+square.width/2 && y >= square.y-square.height/2 && y <= square.y+square.height/2 )
     return true;
 }

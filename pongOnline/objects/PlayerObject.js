@@ -23,6 +23,7 @@ function Player(id,position){
   this.status.shape = "rectangle";
   this.id = id;
   this.score = 0;
+  this.ready = false;
   this.keypress = {};
   this.mouse = {
     move:{x:undefined,y:undefined},
@@ -33,7 +34,7 @@ function Player(id,position){
     height : SETTINGS.PLAYER.HEIGHT,
     width : SETTINGS.PLAYER.WIDTH,
     x : xPos,
-    y : (SETTINGS.HEIGHT-SETTINGS.PLAYER.HEIGHT)/2,
+    y : SETTINGS.HEIGHT/2,
     color : {fill:color}
   };
 }
@@ -41,10 +42,12 @@ Player.prototype = new BaseObejct();
 Player.prototype.constructor = Player;
 Player.prototype.update = function(room){
   var player = this.status.rect;
-  if(this.keypress[UP] && player.y - UNIT >= 0 + SETTINGS.BORDER_WIDTH)
-    player.y -= UNIT;
-  if(this.keypress[DOWN] && player.y + player.height + UNIT <= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
-    player.y += UNIT;
+  if(room.status == "countdown" || room.status == "playing"){
+    if(this.keypress[UP] && player.y - player.height/2 - UNIT >= 0 + SETTINGS.BORDER_WIDTH)
+      player.y -= UNIT;
+    if(this.keypress[DOWN] && player.y + player.height/2 + UNIT <= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
+      player.y += UNIT;
+  }
 };
 
 module.exports = Player;
