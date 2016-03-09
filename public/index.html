@@ -7,6 +7,7 @@
   <body>
     <script src="/socket.io/socket.io.js"></script>
     <script src="//code.jquery.com/jquery-1.11.1.js"></script>
+    <span id ='test'></span>
 <script>
 $(function(){
   var GAME_SETTINGS = null;
@@ -359,6 +360,32 @@ $(function(){
         e.preventDefault();
         socket.emit('click', e.offsetX, e.offsetY);
       });
+      canvas.addEventListener("touchstart",function(e){
+        var x = e.changedTouches[0].clientX-e.changedTouches[0].target.offsetLeft;
+        var y = e.changedTouches[0].clientY-e.changedTouches[0].target.offsetTop;
+        e.preventDefault();
+        socket.emit('click', x, y);
+      });
+      canvas.addEventListener("touchmove",function(e){
+        var x = e.changedTouches[0].clientX-e.changedTouches[0].target.offsetLeft;
+        var y = e.changedTouches[0].clientY-e.changedTouches[0].target.offsetTop;
+        socket.emit('click', x, y);
+      });
+      document.body.addEventListener("touchstart",function(e){
+        var canvasTop = canvas.offsetTop;
+        var canvasBottom = canvas.offsetHeight+canvasTop;
+        if(e.changedTouches[0].clientY>canvasTop && e.changedTouches[0].clientY<canvasBottom){
+          e.preventDefault();
+        }
+      });
+      document.body.addEventListener("touchmove",function(e){
+        var canvasTop = canvas.offsetTop;
+        var canvasBottom = canvas.offsetHeight+canvasTop;
+        if(e.changedTouches[0].clientY>canvasTop && e.changedTouches[0].clientY<canvasBottom){
+          var y = e.changedTouches[0].clientY-canvasTop;
+          socket.emit('click', null, y);
+        }
+      });
       mainLoop = playing.loop;
     };
     playing.loop = function(){
@@ -463,7 +490,7 @@ $(function(){
     backToTitle.destroy = function(){
     };
   })();
-})
+});
 
 // Objects
 function TextObject(){}
@@ -513,11 +540,34 @@ ButtonObject.prototype.setEvents = function(canvas){
   $(canvas).on("mousemove",function(e){
     buttonObject.mousemove(e);
   });
+  canvas.addEventListener("touchstart",function(e){
+    e.preventDefault();
+    buttonObject.mousemove(e);
+  });
+  canvas.addEventListener("touchmove",function(e){
+    buttonObject.mousemove(e);
+  });
+  canvas.addEventListener("touchend",function(e){
+    var x = e.changedTouches[0].clientX-e.changedTouches[0].target.offsetLeft;
+    var y = e.changedTouches[0].clientY-e.changedTouches[0].target.offsetTop;
+    var rect = buttonObject.data.rect;
+    if(pointSquareCollusionCheck(x,y,rect)){
+      buttonObject.click();
+    }
+  });
 };
 ButtonObject.prototype.mousemove = function(e){
+  var x,y;
+  if(e.type == "mousemove"){
+    x = e.offsetX;
+    y = e.offsetY;
+  } else {
+    x = e.changedTouches[0].clientX-e.changedTouches[0].target.offsetLeft;
+    y = e.changedTouches[0].clientY-e.changedTouches[0].target.offsetTop;
+  }
   var rect = this.data.rect;
   var text = this.data.text;
-  var mouseover = pointSquareCollusionCheck(e.offsetX, e.offsetY, rect);
+  var mouseover = pointSquareCollusionCheck(x, y, rect);
 
   rect.color = mouseover?rect.colorData.mouseover:rect.colorData.default;
   text.color = mouseover?text.colorData.mouseover:text.colorData.default;

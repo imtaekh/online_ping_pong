@@ -43,11 +43,33 @@ Player.prototype.constructor = Player;
 Player.prototype.update = function(room){
   var player = this.status.rect;
   if(room.status == "countdown" || room.status == "playing"){
-    if(this.keypress[UP] && player.y - player.height/2 - UNIT >= 0 + SETTINGS.BORDER_WIDTH)
-      player.y -= UNIT;
-    if(this.keypress[DOWN] && player.y + player.height/2 + UNIT <= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
-      player.y += UNIT;
+    if(this.keypress[UP]){
+      moveUp(player);
+      this.mouse.click = null;
+    }
+    if(this.keypress[DOWN]){
+      moveDown(player);
+      this.mouse.click = null;
+    }
+    if(this.mouse.click && ((this.mouse.click.x < player.x+50 && this.mouse.click.x > player.x-50)||(this.mouse.click.x === null))){
+      if(this.mouse.click.y<player.y-5){
+        moveUp(player);
+      } else if (this.mouse.click.y>player.y+5){
+        moveDown(player);
+      } else {
+        this.mouse.click = null;
+      }
+    }
   }
 };
 
 module.exports = Player;
+
+function moveUp(player){
+  if(player.y - player.height/2 - UNIT >= 0 + SETTINGS.BORDER_WIDTH)
+   player.y -= UNIT;
+}
+function moveDown(player){
+  if(player.y + player.height/2 + UNIT <= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
+    player.y += UNIT;
+}
