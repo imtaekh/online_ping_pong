@@ -31,6 +31,15 @@ function RoomManager(io){
     });
     delete RmMg.rooms[roomId];
   };
+  RmMg.gameOver = function(roomId,winner){
+    var room = RmMg.rooms[roomId];
+    room.players.forEach(function(socket){
+      var message = (socket.id==winner)?"YOU WIN!":"YOU LOSE!";
+      delete RmMg.roomIndex[socket.id];
+      io.to(socket.id).emit('destroy',message);
+    });
+    delete RmMg.rooms[roomId];
+  };
 }
 
 module.exports = RoomManager;
@@ -99,5 +108,12 @@ var playing = {
       statuses.push(obj.status);
     }
     playing.io.to(room.id).emit('update',statuses);
+    if(room.objects[room.players[0].id].score>=SETTINGS.GOAL ||room.objects[room.players[1].id].score>=SETTINGS.GOAL){
+      if(room.objects[room.players[0].id].score>room.objects[room.players[1].id].score){
+        room.RmMg.gameOver(room.id,room.players[0].id);
+      } else {
+        room.RmMg.gameOver(room.id,room.players[1].id);
+      }
+    }
   }
 };
