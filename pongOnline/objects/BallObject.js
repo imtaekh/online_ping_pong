@@ -10,8 +10,8 @@ function Ball(player0Id, player1Id){
   this.playerIds = [player0Id,player1Id];
   this.dynamic ={};
   this.speed = 4;
-  this.dynamic = angleToVelocity(20);
-  this.move = true;
+  this.dynamic = undefined;
+  this.serve = new Serve(player0Id,-1);
   this.status.shape = "rectangle";
   this.status.rect = {
     x : SETTINGS.WIDTH/2,
@@ -24,8 +24,31 @@ function Ball(player0Id, player1Id){
 Ball.prototype = new BaseObejct();
 Ball.prototype.constructor = Ball;
 Ball.prototype.update = function(room){
-  if(this.move&&room.status=="playing"){
-    var ball = this.status.rect;
+  var ball = this.status.rect;
+
+  if(this.serve&&this.serve.isOn){
+    for(var object in room.objects){
+      if(object == this.serve.player){
+        var playerStat = room.objects[object].status.rect;
+        ball.y = playerStat.y;
+        if(playerStat.x<SETTINGS.WIDTH/2){
+          ball.x = playerStat.x+ball.width/2+playerStat.width/2;
+        } else {
+          ball.x = playerStat.x-ball.width/2-playerStat.width/2;
+        }
+        if(room.status=="playing" && --this.serve.count<0){
+          this.serve.isOn=false;
+          var newAngle;
+          if(playerStat.x<SETTINGS.WIDTH/2){
+            newAngle = 50-(playerStat.y/SETTINGS.HEIGHT)*100;
+          } else {
+            newAngle = 130+(playerStat.y/SETTINGS.HEIGHT)*100;
+          }
+          this.dynamic = angleToVelocity(newAngle);
+        }
+      }
+    }
+  } else if(room.status=="playing"){
     ball.x += this.dynamic.xVel*this.speed;
     ball.y += this.dynamic.yVel*this.speed;
     /* dedug mode
@@ -38,13 +61,11 @@ Ball.prototype.update = function(room){
 
     if(ball.x <= 0 - ball.width*2){
       room.objects[this.playerIds[1]].score++;
-      this.dynamic = bounce(90,this.dynamic.angle);
-      this.initialize();
+      this.serve= new Serve(this.playerIds[0]);
     }
     if(ball.x >= SETTINGS.WIDTH + ball.width*2){
       room.objects[this.playerIds[0]].score++;
-      this.dynamic = bounce(90,this.dynamic.angle);
-      this.initialize();
+      this.serve= new Serve(this.playerIds[1]);
     }
     if(ball.y - ball.height/2 <= 0 + SETTINGS.BORDER_WIDTH){
       this.dynamic = bounce(0,this.dynamic.angle);
@@ -63,23 +84,23 @@ Ball.prototype.update = function(room){
             break;
           case COLLUSION_TYPE.VERTICAL:
             this.dynamic = bounce(0,this.dynamic.angle);
-            //console.log("vertical");
+            console.log("vertical");
             break;
           case COLLUSION_TYPE.HORIZONTAL:
             this.dynamic = bounce(90,this.dynamic.angle);
-            //console.log("horizontal");
+            console.log("horizontal");
             break;
           case COLLUSION_TYPE.EDGE_SMASH:
             this.dynamic = smash(this.dynamic.angle);
-            //console.log("EDGE_SMASH");
+            console.log("EDGE_SMASH");
             break;
           case COLLUSION_TYPE.EDGE_SLIDE:
             this.dynamic = slide(this.dynamic.angle);
-            //console.log("EDGE_SLIDE");
+            console.log("EDGE_SLIDE");
             break;
           case COLLUSION_TYPE.EDGE_BACK:
             this.dynamic = bounce(0,this.dynamic.angle);
-            //console.log("EDGE_BACK");
+            console.log("EDGE_BACK");
             break;
         }
       }
@@ -94,6 +115,14 @@ Ball.prototype.initialize = function(objects){
 };
 
 module.exports = Ball;
+
+function Serve(playerId,count){
+  return {
+    isOn:true,
+    player:playerId,
+    count:count?count:100
+  };
+}
 
 function bounce(serfaceAngle,angle){
   var newAngle = getBouncedAngle(serfaceAngle,angle);
@@ -140,11 +169,13 @@ function smash(angle){
   }
   return angleToVelocity(newAngle);
 }
+
 function trimAngle(angle){
     angle = angle%360;
     if(angle <0) angle += 360;
     return angle;
 }
+
 function angleToVelocity(angle){
   return {
     angle : trimAngle(angle),
@@ -180,14 +211,13 @@ function ballCollusionCheck(ballStat,playerStat,ballAngle){
       }
   } else {
     var playerToBallAngle = getAngle(playerStat,ballStat);
-    if(getLeftRight(ballAngle) == getLeftRight(playerToBallAngle)
-      &&((getLeftRight(ballAngle) == TO.LEFT && ballStat.x < SETTINGS.WIDTH/2) || (getLeftRight(ballAngle) == TO.RIGHT && ballStat.x > SETTINGS.WIDTH/2))){
+    if(getLeftRight(ballAngle) == getLeftRight(playerToBallAngle) && ((getLeftRight(ballAngle) == TO.LEFT && ballStat.x < SETTINGS.WIDTH/2) || (getLeftRight(ballAngle) == TO.RIGHT && ballStat.x > SETTINGS.WIDTH/2))){
       return COLLUSION_TYPE.EDGE_BACK;
     }else {
-      if(getUpDown(ballAngle) == getUpDown(playerToBallAngle)){
-        return COLLUSION_TYPE.EDGE_SLIDE;
-      } else {
+      if(getUpDown(ballAngle) != getUpDown(playerToBallAngle)||ballAngle === 0 || ballAngle ==180){
         return COLLUSION_TYPE.EDGE_SMASH;
+      } else {
+        return COLLUSION_TYPE.EDGE_SLIDE;
       }
     }
   }
