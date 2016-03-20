@@ -84,7 +84,7 @@ var playing = {
     this.io = io;
     room.status = "countdown";
     room.loop = this.loop;
-    room.objects.countdown = new Countdown(5,null,SETTINGS.HEIGHT*3/4,100);
+    room.objects.countdown = new Countdown(3,null,SETTINGS.HEIGHT*3/4,100);
     room.objects.countdown.action = function(room){
       delete room.objects.countdown;
       room.status = "playing";

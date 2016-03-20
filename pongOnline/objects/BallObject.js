@@ -6,9 +6,9 @@ var COLLUSION_TYPE = { NO_COLLUSION: -1, VERTICAL: 1, HORIZONTAL: 2};
 function Ball(player0Id, player1Id){
   BaseObejct.call(this);
   this.playerIds = [player0Id,player1Id];
-  this.dx = 1;
-  this.dy = 1;
-  this.speed = 2;
+  this.dynamic ={};
+  this.speed = 4;
+  this.dynamic = angleToVelocity(20);
   this.move = true;
   this.status.shape = "rectangle";
   this.status.rect = {
@@ -24,9 +24,8 @@ Ball.prototype.constructor = Ball;
 Ball.prototype.update = function(room){
   if(this.move&&room.status=="playing"){
     var ball = this.status.rect;
-    ball.x += this.dx*this.speed;
-    ball.y += this.dy*this.speed;
-
+    ball.x += this.dynamic.xVel*this.speed;
+    ball.y += this.dynamic.yVel*this.speed;
     /* dedug mode
     if(ball.x <= 50 || ball.x >= SETTINGS.WIDTH - 50 ){
     this.speed = 0.2;
@@ -37,32 +36,36 @@ Ball.prototype.update = function(room){
 
     if(ball.x <= 0 - ball.width*2){
       room.objects[this.playerIds[1]].score++;
-      this.dx = Math.abs(this.dx);
+      this.dynamic = bounce(90,this.dynamic.angle);
       this.initialize();
     }
     if(ball.x >= SETTINGS.WIDTH + ball.width*2){
       room.objects[this.playerIds[0]].score++;
-      this.dx = -Math.abs(this.dx);
+      this.dynamic = bounce(90,this.dynamic.angle);
       this.initialize();
     }
-    if(ball.y - ball.height/2 <= 0 + SETTINGS.BORDER_WIDTH)
-    this.dy = Math.abs(this.dy);
-    if(ball.y + ball.height/2 >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH)
-    this.dy = -Math.abs(this.dy);
+    if(ball.y - ball.height/2 <= 0 + SETTINGS.BORDER_WIDTH){
+      this.dynamic = bounce(0,this.dynamic.angle);
+    }
+
+    if(ball.y + ball.height/2 >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH){
+      this.dynamic = bounce(0,this.dynamic.angle);
+    }
+
 
     for(var object in room.objects){
       if(room.objects[object].role == "player"){
         var playerStat = room.objects[object].status.rect;
-        var collusionType = ballCollusionCheck(ball, playerStat, this.dx*this.speed);
+        var collusionType = ballCollusionCheck(ball, playerStat, this.dynamic.xVel*this.speed);
         switch(collusionType){
           case COLLUSION_TYPE.NO_COLLUSION:
-          break;
+            break;
           case COLLUSION_TYPE.VERTICAL:
-          this.dy = bounce(ball.y+ball.height/2, playerStat.y+playerStat.height/2, this.dy);
-          break;
+            this.dynamic = bounce(0,this.dynamic.angle);
+            break;
           case COLLUSION_TYPE.HORIZONTAL:
-          this.dx = bounce(ball.x+ball.width/2, playerStat.x+playerStat.width/2, this.dx);
-          break;
+            this.dynamic = bounce(90,this.dynamic.angle);
+            break;
         }
       }
     }
@@ -77,28 +80,37 @@ Ball.prototype.initialize = function(objects){
 
 module.exports = Ball;
 
-function bounce (x, y, v){
-  return x<y ? -Math.abs(v) : Math.abs(v);
+function bounce(serfaceAngle,angle){
+  var newAngle = (serfaceAngle*2-angle)%360;
+  return angleToVelocity(newAngle);
 }
 
-function ballCollusionCheck(ballStat,playerStat,dx){
+function angleToVelocity(angle){
+  return {
+    angle : angle,
+    xVel : Math.cos(angle/180*Math.PI),
+    yVel : -Math.sin(angle/180*Math.PI)
+  };
+}
+
+function ballCollusionCheck(ballStat,playerStat,xVel){
   if(pointSquareCollusionCheck(      ballStat.x - ballStat.width/2     , ballStat.y - ballStat.height/2, playerStat)){
-    return pointSquareCollusionCheck(ballStat.x - ballStat.width/2 - dx, ballStat.y - ballStat.height/2, playerStat)?
+    return pointSquareCollusionCheck(ballStat.x - ballStat.width/2 - xVel, ballStat.y - ballStat.height/2, playerStat)?
       COLLUSION_TYPE.VERTICAL:
       COLLUSION_TYPE.HORIZONTAL;
   }
   if(pointSquareCollusionCheck(      ballStat.x + ballStat.width/2     , ballStat.y - ballStat.height/2, playerStat)){
-    return pointSquareCollusionCheck(ballStat.x + ballStat.width/2 - dx, ballStat.y - ballStat.height/2, playerStat)?
+    return pointSquareCollusionCheck(ballStat.x + ballStat.width/2 - xVel, ballStat.y - ballStat.height/2, playerStat)?
       COLLUSION_TYPE.VERTICAL:
       COLLUSION_TYPE.HORIZONTAL;
   }
   if(pointSquareCollusionCheck(      ballStat.x - ballStat.width/2     , ballStat.y + ballStat.height/2, playerStat)){
-    return pointSquareCollusionCheck(ballStat.x - ballStat.width/2 - dx, ballStat.y + ballStat.height/2, playerStat)?
+    return pointSquareCollusionCheck(ballStat.x - ballStat.width/2 - xVel, ballStat.y + ballStat.height/2, playerStat)?
       COLLUSION_TYPE.VERTICAL:
       COLLUSION_TYPE.HORIZONTAL;
   }
   if(pointSquareCollusionCheck(      ballStat.x + ballStat.width/2     , ballStat.y + ballStat.height/2, playerStat)){
-    return pointSquareCollusionCheck(ballStat.x + ballStat.width/2 - dx, ballStat.y + ballStat.height/2, playerStat)?
+    return pointSquareCollusionCheck(ballStat.x + ballStat.width/2 - xVel, ballStat.y + ballStat.height/2, playerStat)?
       COLLUSION_TYPE.VERTICAL:
       COLLUSION_TYPE.HORIZONTAL;
   }
