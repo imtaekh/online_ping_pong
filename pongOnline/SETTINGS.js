@@ -19,7 +19,8 @@ var SETTINGS = {
     Y : 40,
     SIZE : 30,
     GAP : 50
-  }
+  },
+  EDGE_SHOOT_ANGLE_ADJUST : 15
 };
 SETTINGS.CLIENT_SETTINGS = {
   WIDTH : SETTINGS.WIDTH,
