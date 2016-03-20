@@ -557,20 +557,22 @@ ButtonObject.prototype.setEvents = function(canvas){
   });
 };
 ButtonObject.prototype.mousemove = function(e){
-  var x,y;
-  if(e.type == "mousemove"){
-    x = e.offsetX;
-    y = e.offsetY;
-  } else {
-    x = e.changedTouches[0].clientX-e.changedTouches[0].target.offsetLeft;
-    y = e.changedTouches[0].clientY-e.changedTouches[0].target.offsetTop;
-  }
-  var rect = this.data.rect;
-  var text = this.data.text;
-  var mouseover = pointSquareCollusionCheck(x, y, rect);
+  if(this.data){
+    var x,y;
+    if(e.type == "mousemove"){
+      x = e.offsetX;
+      y = e.offsetY;
+    } else {
+      x = e.changedTouches[0].clientX-e.changedTouches[0].target.offsetLeft;
+      y = e.changedTouches[0].clientY-e.changedTouches[0].target.offsetTop;
+    }
+    var rect = this.data.rect;
+    var text = this.data.text;
+    var mouseover = pointSquareCollusionCheck(x, y, rect);
 
-  rect.color = mouseover?rect.colorData.mouseover:rect.colorData.default;
-  text.color = mouseover?text.colorData.mouseover:text.colorData.default;
+    rect.color = mouseover?rect.colorData.mouseover:rect.colorData.default;
+    text.color = mouseover?text.colorData.mouseover:text.colorData.default;
+  }
 };
 ButtonObject.prototype.draw = function(){
   if(!this.data) return;
