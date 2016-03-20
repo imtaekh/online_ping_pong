@@ -16,7 +16,7 @@ function Player(id,position){
       xPos = SETTINGS.PLAYER.GAP;
       break;
     case "RIGHT":
-      xPos = SETTINGS.WIDTH-SETTINGS.PLAYER.GAP-SETTINGS.PLAYER.WIDTH;
+      xPos = SETTINGS.WIDTH-SETTINGS.PLAYER.GAP;
       break;
   }
   this.role = "player";
