@@ -532,9 +532,11 @@ ButtonObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS,data){
 ButtonObject.prototype.setEvents = function(canvas){
   buttonObject = this;
   $(canvas).on("click",function(e){
-    var rect = buttonObject.data.rect;
-    if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
-      buttonObject.click();
+    if (buttonObject.data) {
+      var rect = buttonObject.data.rect;
+      if(pointSquareCollusionCheck(e.offsetX, e.offsetY, rect)){
+        buttonObject.click();
+      }
     }
   });
   $(canvas).on("mousemove",function(e){
