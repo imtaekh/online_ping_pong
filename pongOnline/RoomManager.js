@@ -108,7 +108,11 @@ var playing = {
       statuses.push(obj.status);
     }
     playing.io.to(room.id).emit('update',statuses);
-    if(room.objects[room.players[0].id].score>=SETTINGS.GOAL ||room.objects[room.players[1].id].score>=SETTINGS.GOAL){
+    if(room.status == "playing" && (room.objects[room.players[0].id].score>=SETTINGS.GOAL ||room.objects[room.players[1].id].score>=SETTINGS.GOAL)){
+      room.status = "gameOver";
+      room.gameOverDelay = 3;
+    }
+    if(room.status == "gameOver" && room.gameOverDelay--<0){
       if(room.objects[room.players[0].id].score>room.objects[room.players[1].id].score){
         room.RmMg.gameOver(room.id,room.players[0].id);
       } else {

@@ -10,6 +10,8 @@ function Ball(player0Id, player1Id){
   this.playerIds = [player0Id,player1Id];
   this.dynamic ={};
   this.speed = 4;
+  this.boostCount = 0;
+  this.boostCountMax = 60;
   this.dynamic = undefined;
   this.serve = new Serve(player0Id,-1);
   this.status.shape = "rectangle";
@@ -44,13 +46,26 @@ Ball.prototype.update = function(room){
           } else {
             newAngle = 130+(playerStat.y/SETTINGS.HEIGHT)*100;
           }
+          this.boostCount = 0;
           this.dynamic = angleToVelocity(newAngle);
         }
       }
     }
   } else if(room.status=="playing"){
-    ball.x += this.dynamic.xVel*this.speed;
-    ball.y += this.dynamic.yVel*this.speed;
+    if(this.boostCount >0){
+      this.boostCount--;
+      var boost;
+      if(this.boostCount>(this.boostCountMax/2)){
+        boost = 2*this.speed;
+      }else{
+        boost = 2*this.speed*(this.boostCount*2/this.boostCountMax);
+      }
+      ball.x += this.dynamic.xVel*(this.speed+boost);
+      ball.y += this.dynamic.yVel*(this.speed+boost);
+    }else{
+      ball.x += this.dynamic.xVel*this.speed;
+      ball.y += this.dynamic.yVel*this.speed;
+    }
     /* dedug mode
     if(ball.x <= 50 || ball.x >= SETTINGS.WIDTH - 50 ){
     this.speed = 0.2;
@@ -92,6 +107,7 @@ Ball.prototype.update = function(room){
             break;
           case COLLUSION_TYPE.EDGE_SMASH:
             this.dynamic = smash(this.dynamic.angle);
+            this.boostCount = this.boostCountMax;
             console.log("EDGE_SMASH");
             break;
           case COLLUSION_TYPE.EDGE_SLIDE:
