@@ -22,6 +22,7 @@ io.on('connection', function(socket){
   console.log('user connected: ', socket.id);
 
   socket.on('waiting', function(){
+    //console.log('waiting from '+socket.id);
     lobbyManager.push(socket);
     lobbyManager.dispatch(roomManager);
   });
