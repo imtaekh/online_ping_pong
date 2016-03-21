@@ -56,8 +56,10 @@ Ball.prototype.update = function(room){
       this.boostCount--;
       var boost;
       if(this.boostCount>(this.boostCountMax/2)){
+        this.status.rect.color={fill:"#FF0000"};
         boost = 2*this.speed;
       }else{
+        this.status.rect.color={fill:"#000000"};
         boost = 2*this.speed*(this.boostCount*2/this.boostCountMax);
       }
       ball.x += this.dynamic.xVel*(this.speed+boost);
