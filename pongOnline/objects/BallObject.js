@@ -1,7 +1,8 @@
 var SETTINGS = require("../SETTINGS.js");
 var BaseObejct = require("./BaseObject.js");
+var Spark = require("./SparkObject.js");
 
-var COLLUSION_TYPE = { NO_COLLUSION: -1, VERTICAL: 1, HORIZONTAL: 2, EDGE_SMASH: 3 ,EDGE_SLIDE: 4, EDGE_BACK: 5};
+var COLLUSION_TYPE = { NO_COLLUSION: -1, VERTICAL: 1, HORIZONTAL: 2, SMASH_TYPE_1: 3 ,SMASH_TYPE_2: 4, EDGE_BACK: 5, STRAIGHT: 6};
 var QUADRANT = { FIRST: 1, SECOND: 2, THIRD: 3, FOURTH: 4 };
 var TO = { RIGHT: "RIGHT", LEFT: "LEFT", UP: "UP", DOWN: "DOWN" };
 
@@ -107,18 +108,25 @@ Ball.prototype.update = function(room){
             this.dynamic = bounce(90,this.dynamic.angle);
             console.log("horizontal");
             break;
-          case COLLUSION_TYPE.EDGE_SMASH:
+          case COLLUSION_TYPE.SMASH_TYPE_1:
             this.dynamic = smash(this.dynamic.angle);
             this.boostCount = this.boostCountMax;
-            console.log("EDGE_SMASH");
+            room.effects = room.effects.concat(GenerateSparks(ball.x,ball.y));
+            console.log("SMASH_TYPE_1");
             break;
-          case COLLUSION_TYPE.EDGE_SLIDE:
+          case COLLUSION_TYPE.SMASH_TYPE_2:
             this.dynamic = slide(this.dynamic.angle);
-            console.log("EDGE_SLIDE");
+            this.boostCount = this.boostCountMax;
+            room.effects = room.effects.concat(GenerateSparks(ball.x,ball.y));
+            console.log("SMASH_TYPE_2");
             break;
           case COLLUSION_TYPE.EDGE_BACK:
             this.dynamic = bounce(0,this.dynamic.angle);
             console.log("EDGE_BACK");
+            break;
+          case COLLUSION_TYPE.STRAIGHT:
+            this.dynamic = stratght(this.dynamic.angle);
+            console.log("STRAIGHT");
             break;
         }
       }
@@ -134,6 +142,32 @@ Ball.prototype.initialize = function(objects){
 
 module.exports = Ball;
 
+function GenerateSparks(x,y){
+  var sparkArray = [];
+  for(var i=0;i<Math.random()*3+3;i++){
+    sparkArray.push(new Spark(x,y));
+  }
+  return sparkArray;
+}
+function stratght(angle){
+  var newAngle = getBouncedAngle(90,angle);
+  if(angle == 180 || angle === 0){
+    newAngle -= SETTINGS.STRAIGHT_ADJUST/2+Math.random()*SETTINGS.STRAIGHT_ADJUST;
+  } else {
+    var adj = Math.random()*SETTINGS.STRAIGHT_ADJUST;
+    switch(getQuadrant(newAngle)){
+      case QUADRANT.FIRST:
+      case QUADRANT.THIRD:
+        newAngle += adj;
+        break;
+      case QUADRANT.SECOND:
+      case QUADRANT.FOURTH:
+        newAngle -= adj;
+        break;
+    }
+  }
+  return angleToVelocity(newAngle);
+}
 function Serve(playerId,count){
   return {
     isOn:true,
@@ -154,14 +188,15 @@ function getBouncedAngle(serfaceAngle,angle){
 function slide(angle){
   var newAngle = getBouncedAngle(90,angle);
   var adj = SETTINGS.EDGE_SHOOT_ANGLE_ADJUST;
-  if(getQuadrant(newAngle) == QUADRANT.FIRST){
-    newAngle += adj;
-  } else if(getQuadrant(newAngle) == QUADRANT.SECOND){
-    newAngle -= adj;
-  } else if(getQuadrant(newAngle) == QUADRANT.THIRD){
-    newAngle += adj;
-  } else if(getQuadrant(newAngle) == QUADRANT.FOURTH){
-    newAngle -= adj;
+  switch(getQuadrant(newAngle)){
+    case QUADRANT.FIRST:
+    case QUADRANT.THIRD:
+      newAngle += adj;
+      break;
+    case QUADRANT.SECOND:
+    case QUADRANT.FOURTH:
+      newAngle -= adj;
+      break;
   }
   return angleToVelocity(newAngle);
 }
@@ -169,21 +204,15 @@ function slide(angle){
 function smash(angle){
   var newAngle = trimAngle(angle+180);
   var adj = SETTINGS.EDGE_SHOOT_ANGLE_ADJUST;
-  if(getQuadrant(newAngle) == QUADRANT.FIRST && newAngle>0+adj){
-    newAngle -= adj;
-  } else if(getQuadrant(newAngle) == QUADRANT.SECOND && newAngle<180-adj){
-    newAngle += adj;
-  } else if(getQuadrant(newAngle) == QUADRANT.THIRD && newAngle<180+adj){
-    newAngle -= adj;
-  } else if(getQuadrant(newAngle) == QUADRANT.FOURTH && newAngle<360-adj){
-    newAngle += adj;
-  } else{
-    var randomAngle = Math.random()*adj;
-    if(getLeftRight(newAngle) == TO.LEFT){
-      newAngle = 180-adj/2+randomAngle;
-    } else if(getLeftRight(newAngle) == TO.RIGHT){
-      newAngle = 0-adj/2+randomAngle;
-    }
+  switch(getQuadrant(newAngle)){
+    case QUADRANT.FIRST:
+    case QUADRANT.THIRD:
+      newAngle -= adj;
+      break;
+    case QUADRANT.SECOND:
+    case QUADRANT.FOURTH:
+      newAngle += adj;
+      break;
   }
   return angleToVelocity(newAngle);
 }
@@ -220,22 +249,31 @@ function ballCollusionCheck(ballStat,playerStat,ballAngle){
     }
   });
   if(collusions.length === 0){
-    return COLLUSION_TYPE.NO_COLLUSION  ;
+    return COLLUSION_TYPE.NO_COLLUSION;
   } else if(collusions.length == 2){
-      if(collusions[0].x == collusions[1].x){
-        return COLLUSION_TYPE.HORIZONTAL;
-      } else {
-        return COLLUSION_TYPE.VERTICAL;
-      }
+    var sAngle = SETTINGS.STRATGHT_ANGLE;
+    if(!(ballAngle > sAngle && ballAngle < 180-sAngle) || !(ballAngle > 180+sAngle && ballAngle < 360-sAngle)){
+      return COLLUSION_TYPE.STRAIGHT;
+    } else
+    if(collusions[0].x == collusions[1].x){
+      return COLLUSION_TYPE.HORIZONTAL;
+    } else {
+      return COLLUSION_TYPE.VERTICAL;
+    }
   } else {
     var playerToBallAngle = getAngle(playerStat,ballStat);
     if(getLeftRight(ballAngle) == getLeftRight(playerToBallAngle) && ((getLeftRight(ballAngle) == TO.LEFT && ballStat.x < SETTINGS.WIDTH/2) || (getLeftRight(ballAngle) == TO.RIGHT && ballStat.x > SETTINGS.WIDTH/2))){
       return COLLUSION_TYPE.EDGE_BACK;
-    }else {
-      if(getUpDown(ballAngle) != getUpDown(playerToBallAngle)||ballAngle === 0 || ballAngle ==180){
-        return COLLUSION_TYPE.EDGE_SMASH;
+    } else {
+      var eAngle = SETTINGS.EDGE_ANGLE;
+      if((ballAngle > eAngle && ballAngle < 180-eAngle) || (ballAngle > 180+eAngle && ballAngle < 360-eAngle)){
+        if(getUpDown(ballAngle) != getUpDown(playerToBallAngle)){
+          return COLLUSION_TYPE.SMASH_TYPE_1;
+        } else {
+          return COLLUSION_TYPE.SMASH_TYPE_2;
+        }
       } else {
-        return COLLUSION_TYPE.EDGE_SLIDE;
+        return COLLUSION_TYPE.HORIZONTAL;
       }
     }
   }

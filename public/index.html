@@ -72,7 +72,7 @@ $(function(){
 
   function drawBackground(globalAlpha,color){
     ctx.save();
-    ctx.globalAlpha = globalAlpha?globalAlpha:1;
+    ctx.globalAlpha = globalAlpha!==undefined?globalAlpha:1;
     ctx.fillStyle = color?color:GAME_SETTINGS.BACKGROUND_COLOR;
     ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
     ctx.restore();
@@ -345,6 +345,23 @@ $(function(){
   var playing = new (function(){
     var playing = this;
 
+    playing.events={};
+    playing.events.canvas=function(e){
+      var x = e.changedTouches[0].clientX-e.changedTouches[0].target.offsetLeft;
+      var y = e.changedTouches[0].clientY-e.changedTouches[0].target.offsetTop;
+      e.preventDefault();
+      socket.emit('click', x, y);
+    }
+    playing.events.body=function(e){
+      var canvasTop = canvas.offsetTop;
+      var canvasBottom = canvas.offsetHeight+canvasTop;
+      if(e.changedTouches[0].clientY>canvasTop && e.changedTouches[0].clientY<canvasBottom){
+        e.preventDefault();
+        var y = e.changedTouches[0].clientY-canvasTop;
+        socket.emit('click', null, y);
+      }
+    }
+
     playing.initialize = function(){
       $('body').on('keydown', function(e){
         if(e.keyCode>=37 && e.keyCode<=40){
@@ -366,22 +383,6 @@ $(function(){
         e.preventDefault();
         socket.emit('click', e.offsetX, e.offsetY);
       });
-      playing.events={};
-      playing.events.canvas=function(e){
-        var x = e.changedTouches[0].clientX-e.changedTouches[0].target.offsetLeft;
-        var y = e.changedTouches[0].clientY-e.changedTouches[0].target.offsetTop;
-        e.preventDefault();
-        socket.emit('click', x, y);
-      }
-      playing.events.body=function(e){
-        var canvasTop = canvas.offsetTop;
-        var canvasBottom = canvas.offsetHeight+canvasTop;
-        if(e.changedTouches[0].clientY>canvasTop && e.changedTouches[0].clientY<canvasBottom){
-          e.preventDefault();
-          var y = e.changedTouches[0].clientY-canvasTop;
-          socket.emit('click', null, y);
-        }
-      }
       canvas.addEventListener("touchstart",playing.events.canvas);
       canvas.addEventListener("touchmove",playing.events.canvas);
       document.body.addEventListener("touchstart",playing.events.body);
@@ -397,6 +398,7 @@ $(function(){
     playing.destroy = function(){
       $('body').off();
       $('canvas').off();
+      console.log(playing);
       canvas.removeEventListener("touchstart",playing.events.canvas);
       canvas.removeEventListener("touchmove",playing.events.canvas);
       document.body.removeEventListener("touchstart",playing.events.body);
@@ -600,7 +602,7 @@ function drawRect(ctx, rect){
   ctx.save();
   ctx.beginPath();
 
-  ctx.globalAlpha = rect.globalAlpha?text.globalAlpha:1;
+  ctx.globalAlpha = rect.globalAlpha!==undefined?rect.globalAlpha:1;
   if(rect.color.fill){
     ctx.fillStyle = rect.color.fill;
     ctx.fillRect(rect.x-rect.width/2,rect.y-rect.height/2,rect.width,rect.height);
@@ -621,7 +623,7 @@ function drawText(ctx, text){
   ctx.font = text.size+"px "+text.font;
   ctx.textAlign = text.textAlign;
   ctx.textBaseline = text.textBaseline;
-  ctx.globalAlpha = text.globalAlpha?text.globalAlpha:1;
+  ctx.globalAlpha = text.globalAlpha!==undefined?text.globalAlpha:1;
   if(text.color.stroke){
     ctx.strokeStyle = text.color.stroke;
     ctx.lineWidth = text.lineWidth;
