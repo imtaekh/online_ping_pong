@@ -48,6 +48,7 @@ Ball.prototype.update = function(room){
             newAngle = 130+(playerStat.y/SETTINGS.HEIGHT)*100;
           }
           this.boostCount = 0;
+          this.status.rect.color.fill = "#000000";
           this.dynamic = angleToVelocity(newAngle);
         }
       }
@@ -57,10 +58,10 @@ Ball.prototype.update = function(room){
       this.boostCount--;
       var boost;
       if(this.boostCount>(this.boostCountMax/2)){
-        this.status.rect.color={fill:"#FF0000"};
+        this.status.rect.color.fill = "#FF0000";
         boost = 2*this.speed;
       }else{
-        this.status.rect.color={fill:"#000000"};
+        this.status.rect.color.fill = "#000000";
         boost = 2*this.speed*(this.boostCount*2/this.boostCountMax);
       }
       ball.x += this.dynamic.xVel*(this.speed+boost);
@@ -128,6 +129,14 @@ Ball.prototype.update = function(room){
             this.dynamic = stratght(this.dynamic.angle);
             console.log("STRAIGHT");
             break;
+        }
+        if(collusionType != COLLUSION_TYPE.NO_COLLUSION){
+          var ballToward = getLeftRight(this.dynamic.angle);
+          if(ballToward == TO.LEFT){
+            ball.x = playerStat.x-(playerStat.width+ball.width)/2;
+          }else {
+            ball.x = playerStat.x+(playerStat.width+ball.width)/2;
+          }
         }
       }
     }
