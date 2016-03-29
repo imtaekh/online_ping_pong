@@ -153,7 +153,7 @@ module.exports = Ball;
 
 function GenerateSparks(x,y){
   var sparkArray = [];
-  for(var i=0;i<Math.random()*3+3;i++){
+  for(var i=0;i<Math.random()*10+5;i++){
     sparkArray.push(new Spark(x,y));
   }
   return sparkArray;
