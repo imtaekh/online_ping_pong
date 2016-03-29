@@ -2,7 +2,7 @@ var SETTINGS = require("../SETTINGS.js");
 var BaseObejct = require("./BaseObject.js");
 var Spark = require("./SparkObject.js");
 
-var COLLUSION_TYPE = { NO_COLLUSION: -1, VERTICAL: 1, HORIZONTAL: 2, SMASH_TYPE_1: 3 ,SMASH_TYPE_2: 4, EDGE_BACK: 5, STRAIGHT: 6};
+var COLLUSION_TYPE = { NO_COLLUSION: -1, UP: 1, RIGHT: 2, DOWN: 3, LEFT: 4, SMASH_TYPE_1: 5 ,SMASH_TYPE_2: 6, STRAIGHT: 7};
 var QUADRANT = { FIRST: 1, SECOND: 2, THIRD: 3, FOURTH: 4 };
 var TO = { RIGHT: "RIGHT", LEFT: "LEFT", UP: "UP", DOWN: "DOWN" };
 
@@ -12,7 +12,7 @@ function Ball(player0Id, player1Id){
   this.dynamic ={};
   this.speed = 4;
   this.boostCount = 0;
-  this.boostCountMax = 60;
+  this.boostCountMax = 100;
   this.dynamic = undefined;
   this.serve = new Serve(player0Id,-1);
   this.status.shape = "rectangle";
@@ -28,11 +28,12 @@ Ball.prototype = new BaseObejct();
 Ball.prototype.constructor = Ball;
 Ball.prototype.update = function(room){
   var ball = this.status.rect;
-
+  var object;
+  var playerStat;
   if(this.serve&&this.serve.isOn){
-    for(var object in room.objects){
+    for(object in room.objects){
       if(object == this.serve.player){
-        var playerStat = room.objects[object].status.rect;
+        playerStat = room.objects[object].status.rect;
         ball.y = playerStat.y;
         if(playerStat.x<SETTINGS.WIDTH/2){
           ball.x = playerStat.x+ball.width/2+playerStat.width/2;
@@ -94,49 +95,48 @@ Ball.prototype.update = function(room){
       this.dynamic = bounce(0,this.dynamic.angle);
     }
 
-    for(var object in room.objects){
+    for(object in room.objects){
       if(room.objects[object].role == "player"){
-        var playerStat = room.objects[object].status.rect;
+        playerStat = room.objects[object].status.rect;
         var collusionType = ballCollusionCheck(ball, playerStat, this.dynamic.angle);
+
         switch(collusionType){
           case COLLUSION_TYPE.NO_COLLUSION:
             break;
-          case COLLUSION_TYPE.VERTICAL:
-            this.dynamic = bounce(0,this.dynamic.angle);
-            console.log("vertical");
+          case COLLUSION_TYPE.UP:
+            if(getUpDown(this.dynamic.angle)==TO.DOWN) this.dynamic = bounce(0,this.dynamic.angle);
+            else this.dynamic = angleToVelocity(this.dynamic.angle-5);
+            //console.log("UP");
             break;
-          case COLLUSION_TYPE.HORIZONTAL:
-            this.dynamic = bounce(90,this.dynamic.angle);
-            console.log("horizontal");
+          case COLLUSION_TYPE.DOWN:
+            if(getUpDown(this.dynamic.angle)==TO.UP) this.dynamic = bounce(0,this.dynamic.angle);
+            else this.dynamic = angleToVelocity(this.dynamic.angle+5);
+            //console.log("DOWN");
+            break;
+          case COLLUSION_TYPE.LEFT:
+            if(getLeftRight(this.dynamic.angle)==TO.RIGHT) this.dynamic = bounce(90,this.dynamic.angle);
+            //console.log("LEFT");
+            break;
+          case COLLUSION_TYPE.RIGHT:
+            if(getLeftRight(this.dynamic.angle)==TO.LEFT) this.dynamic = bounce(90,this.dynamic.angle);
+            //console.log("RIGHT");
             break;
           case COLLUSION_TYPE.SMASH_TYPE_1:
             this.dynamic = smash(this.dynamic.angle);
             this.boostCount = this.boostCountMax;
             room.effects = room.effects.concat(GenerateSparks(ball.x,ball.y));
-            console.log("SMASH_TYPE_1");
+            //console.log("SMASH_TYPE_1");
             break;
           case COLLUSION_TYPE.SMASH_TYPE_2:
             this.dynamic = slide(this.dynamic.angle);
             this.boostCount = this.boostCountMax;
             room.effects = room.effects.concat(GenerateSparks(ball.x,ball.y));
-            console.log("SMASH_TYPE_2");
-            break;
-          case COLLUSION_TYPE.EDGE_BACK:
-            this.dynamic = bounce(0,this.dynamic.angle);
-            console.log("EDGE_BACK");
+            //console.log("SMASH_TYPE_2");
             break;
           case COLLUSION_TYPE.STRAIGHT:
             this.dynamic = stratght(this.dynamic.angle);
-            console.log("STRAIGHT");
+            //console.log("STRAIGHT");
             break;
-        }
-        if(collusionType != COLLUSION_TYPE.NO_COLLUSION){
-          var ballToward = getLeftRight(this.dynamic.angle);
-          if(ballToward == TO.LEFT){
-            ball.x = playerStat.x-(playerStat.width+ball.width)/2;
-          }else {
-            ball.x = playerStat.x+(playerStat.width+ball.width)/2;
-          }
         }
       }
     }
@@ -245,6 +245,7 @@ function Point(x,y){
 }
 
 function ballCollusionCheck(ballStat,playerStat,ballAngle){
+  ballAngle = trimAngle(ballAngle);
   var points=[
     new Point(ballStat.x - ballStat.width/2, ballStat.y - ballStat.height/2),
     new Point(ballStat.x + ballStat.width/2, ballStat.y - ballStat.height/2),
@@ -257,35 +258,43 @@ function ballCollusionCheck(ballStat,playerStat,ballAngle){
       collusions.push(new Point(point.x,point.y));
     }
   });
-  if(collusions.length === 0){
-    return COLLUSION_TYPE.NO_COLLUSION;
-  } else if(collusions.length == 2){
-    var sAngle = SETTINGS.STRATGHT_ANGLE;
-    if(!(ballAngle > sAngle && ballAngle < 180-sAngle) || !(ballAngle > 180+sAngle && ballAngle < 360-sAngle)){
-      return COLLUSION_TYPE.STRAIGHT;
-    } else
-    if(collusions[0].x == collusions[1].x){
-      return COLLUSION_TYPE.HORIZONTAL;
-    } else {
-      return COLLUSION_TYPE.VERTICAL;
-    }
-  } else {
-    var playerToBallAngle = getAngle(playerStat,ballStat);
-    if(getLeftRight(ballAngle) == getLeftRight(playerToBallAngle) && ((getLeftRight(ballAngle) == TO.LEFT && ballStat.x < SETTINGS.WIDTH/2) || (getLeftRight(ballAngle) == TO.RIGHT && ballStat.x > SETTINGS.WIDTH/2))){
-      return COLLUSION_TYPE.EDGE_BACK;
-    } else {
-      var eAngle = SETTINGS.EDGE_ANGLE;
-      if((ballAngle > eAngle && ballAngle < 180-eAngle) || (ballAngle > 180+eAngle && ballAngle < 360-eAngle)){
-        if(getUpDown(ballAngle) != getUpDown(playerToBallAngle)){
-          return COLLUSION_TYPE.SMASH_TYPE_1;
-        } else {
-          return COLLUSION_TYPE.SMASH_TYPE_2;
-        }
+  var type = COLLUSION_TYPE.NO_COLLUSION;
+  var sAngle = SETTINGS.STRATGHT_ANGLE;
+  var eAngle = SETTINGS.EDGE_ANGLE;
+
+  if(collusions.length === 0) return type;
+  var p2bAngle = getAngle(playerStat,ballStat);
+  var p2bLeftRight = getLeftRight(p2bAngle);
+  var p2bUpDown = getUpDown(p2bAngle);
+  switch(collusions.length){
+    case 1:
+      var bLeftRight = getLeftRight(ballAngle);
+      var bUpDown = getUpDown(ballAngle);
+      if(bLeftRight == p2bLeftRight){
+        type = (p2bUpDown == TO.UP)?COLLUSION_TYPE.UP:COLLUSION_TYPE.DOWN;
       } else {
-        return COLLUSION_TYPE.HORIZONTAL;
+        if((ballAngle > eAngle && ballAngle < 180-eAngle) || (ballAngle > 180+eAngle && ballAngle < 360-eAngle))
+          type = (bUpDown != p2bUpDown)?COLLUSION_TYPE.SMASH_TYPE_1:COLLUSION_TYPE.SMASH_TYPE_2;
+        else
+          type = (p2bLeftRight == TO.LEFT)?COLLUSION_TYPE.LEFT:COLLUSION_TYPE.RIGHT;
       }
-    }
+      break;
+    case 2:
+      if(collusions[0].x == collusions[1].x){
+        if(ballAngle < sAngle || ballAngle > 360-sAngle || (ballAngle < 180+sAngle && ballAngle > 180-sAngle))
+          type = COLLUSION_TYPE.STRAIGHT;
+        else
+          type = (p2bLeftRight == TO.LEFT)?COLLUSION_TYPE.LEFT:COLLUSION_TYPE.RIGHT;
+      } else {
+        type = (p2bUpDown == TO.UP)?COLLUSION_TYPE.UP:COLLUSION_TYPE.DOWN;
+      }
+      break;
+    case 3: // it will never happen
+      break;
+    case 4: // you can put recursive function here if you want to be perfect
+      break;
   }
+  return type;
 }
 
 function getQuadrant(angle){
