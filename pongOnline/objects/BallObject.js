@@ -43,13 +43,19 @@ Ball.prototype.update = function(room){
         if(room.status=="playing" && --this.serve.count<0){
           this.serve.isOn=false;
           var newAngle;
-          if(playerStat.x<SETTINGS.WIDTH/2){
-            newAngle = 50-(playerStat.y/SETTINGS.HEIGHT)*100;
-          } else {
-            newAngle = 130+(playerStat.y/SETTINGS.HEIGHT)*100;
+          if(playerStat.x<SETTINGS.WIDTH/2 && playerStat.y<SETTINGS.HEIGHT/2){
+            newAngle = -SETTINGS.SERVE_ANGLE;
+          } else if(playerStat.x<SETTINGS.WIDTH/2 && playerStat.y>SETTINGS.HEIGHT/2){
+            newAngle = +SETTINGS.SERVE_ANGLE;
+          } else if(playerStat.x<SETTINGS.WIDTH/2 && playerStat.y==SETTINGS.HEIGHT/2){
+            newAngle = getRandomSign()*SETTINGS.SERVE_ANGLE;
+          } else if(playerStat.x>SETTINGS.WIDTH/2 && playerStat.y<SETTINGS.HEIGHT/2){
+            newAngle = 180+SETTINGS.SERVE_ANGLE;
+          } else if(playerStat.x>SETTINGS.WIDTH/2 && playerStat.y>SETTINGS.HEIGHT/2){
+            newAngle = 180-SETTINGS.SERVE_ANGLE;
+          } else if(playerStat.x>SETTINGS.WIDTH/2 && playerStat.y==SETTINGS.HEIGHT/2){
+            newAngle = 180+getRandomSign()*SETTINGS.SERVE_ANGLE;
           }
-          this.boostCount = 0;
-          this.status.rect.color.fill = "#000000";
           this.dynamic = angleToVelocity(newAngle);
         }
       }
@@ -82,10 +88,12 @@ Ball.prototype.update = function(room){
     if(ball.x <= 0 - ball.width*2){
       room.objects[this.playerIds[1]].score++;
       this.serve= new Serve(this.playerIds[0]);
+      ball.color.fill = "#000000";
     }
     if(ball.x >= SETTINGS.WIDTH + ball.width*2){
       room.objects[this.playerIds[0]].score++;
       this.serve= new Serve(this.playerIds[1]);
+      ball.color.fill = "#000000";
     }
     if(ball.y - ball.height/2 <= 0 + SETTINGS.BORDER_WIDTH){
       this.dynamic = bounce(0,this.dynamic.angle);
@@ -161,9 +169,9 @@ function GenerateSparks(x,y){
 function stratght(angle){
   var newAngle = getBouncedAngle(90,angle);
   if(angle == 180 || angle === 0){
-    newAngle -= SETTINGS.STRAIGHT_ADJUST/2+Math.random()*SETTINGS.STRAIGHT_ADJUST;
+    newAngle = getRandomSign()*SETTINGS.STRAIGHT_ADJUST;
   } else {
-    var adj = Math.random()*SETTINGS.STRAIGHT_ADJUST;
+    var adj = getRandomSign()*SETTINGS.STRAIGHT_ADJUST;
     switch(getQuadrant(newAngle)){
       case QUADRANT.FIRST:
       case QUADRANT.THIRD:
@@ -333,6 +341,10 @@ function getAngle(startPoint,endPoint){
   }
   if(angle <0) angle += 360;
   return angle;
+}
+
+function getRandomSign(){
+  return Math.random() < 0.5 ? -1 : 1;
 }
 
 function pointSquareCollusionCheck(x,y,square){
