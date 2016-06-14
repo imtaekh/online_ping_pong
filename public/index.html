@@ -8,6 +8,9 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="//code.jquery.com/jquery-1.11.1.js"></script>
     <span id ='test'></span>
+    <style>
+      @import url("https://fonts.googleapis.com/css?family=Press+Start+2P");
+    </style>
 <script>
 $(function(){
   var GAME_SETTINGS = null;
@@ -98,7 +101,7 @@ $(function(){
 
   var start = new (function(){
     var start = this;
-
+    start.opening = new Opening();
     start.button1 = new ButtonObject();
     start.button1.click = function(){
       start.toWaiting();
@@ -112,24 +115,12 @@ $(function(){
       }
       text.globalAlpha = 0.2 + 0.7*(animation.count/100);
     };
-
     start.initialize = function(){
+      start.opening.initialize(canvas,ctx,GAME_SETTINGS);
       start.button1.initialize(canvas,ctx,GAME_SETTINGS,{
-        rect: {
-          x: undefined,
-          y: undefined,
-          width: 230,
-          height: 50,
-          lineWidth: 2,
-          color: {fill:undefined, stroke:undefined},
-          colorData: {
-            default: {fill:"#1099cc", stroke:"#223344"},
-            mouseover: {fill:"#0686e0", stroke:"#223344"}
-          }
-        },
         text:{
           x: undefined,
-          y: undefined,
+          y: 310,
           size: 30,
           font: "Arial",
           textBaseline: "middle",
@@ -142,6 +133,18 @@ $(function(){
             mouseover: {fill:"#ddeeff", stroke:undefined}
           }
         },
+        rect: {
+          x: undefined,
+          y: undefined,
+          width: 230,
+          height: 50,
+          lineWidth: 2,
+          color: {fill:undefined, stroke:undefined},
+          colorData: {
+            default: {fill:"#1099cc", stroke:"#223344"},
+            mouseover: {fill:"#0686e0", stroke:"#223344"}
+          }
+        },
         animation: {
           maxCount: 100,
           count: 0,
@@ -151,8 +154,10 @@ $(function(){
       mainLoop = start.loop;
     };
     start.loop = function(){
+      start.opening.update();
       start.button1.update();
       drawBackground();
+      start.opening.draw();
       start.button1.draw();
     };
     start.destroy = function(){
@@ -398,7 +403,6 @@ $(function(){
     playing.destroy = function(){
       $('body').off();
       $('canvas').off();
-      console.log(playing);
       canvas.removeEventListener("touchstart",playing.events.canvas);
       canvas.removeEventListener("touchmove",playing.events.canvas);
       document.body.removeEventListener("touchstart",playing.events.body);
@@ -530,8 +534,9 @@ ButtonObject.prototype.constructor = ButtonObject;
 ButtonObject.prototype.initialize = function(canvas,ctx,GAME_SETTINGS,data){
   TextObject.prototype.initialize.call(this,canvas,ctx,GAME_SETTINGS,data);
   var rect = this.data.rect;
-  rect.x = rect.x?rect.x:GAME_SETTINGS.WIDTH/2;
-  rect.y = rect.y?rect.y:GAME_SETTINGS.HEIGHT/2;
+  var text = this.data.text;
+  rect.x = rect.x?rect.x:text.x?text.x:GAME_SETTINGS.WIDTH/2;
+  rect.y = rect.y?rect.y:text.y?text.y:GAME_SETTINGS.HEIGHT/2;
   rect.color = rect.colorData.default;
   if(this.setEvents) this.setEvents(canvas);
 };
@@ -591,6 +596,181 @@ ButtonObject.prototype.draw = function(){
   drawRect(this.ctx, this.data.rect);
   TextObject.prototype.draw.call(this);
 };
+function Opening(){};
+Opening.prototype.initialize = function(canvas,ctx,GAME_SETTINGS){
+  this.ctx = ctx;
+  var titleSetting = [{
+    x : GAME_SETTINGS.WIDTH/2,
+    y : 100,
+    size : 100,
+    space : 100,
+    lineWidth : 5,
+    color : {fill:"#ED5566", stroke:"#000000"},
+    text : "SMASH"
+  }, {
+    x : GAME_SETTINGS.WIDTH/2+150,
+    y : 220,
+    size : 60,
+    space : 60,
+    lineWidth : 5,
+    color : {fill:"#128123", stroke:"#000000"},
+    text : "PONG"
+  }, {
+    x : GAME_SETTINGS.WIDTH/2+217,
+    y : 165,
+    size : 12,
+    space : 12,
+    lineWidth : 5,
+    color : {fill:"#000000"},
+    text : "Ver. " + GAME_SETTINGS.VER
+  }];
+  this.title=[];
+  for(var i=0; i<titleSetting.length; i++){
+    this.title[i] = generateTitleText(titleSetting[i]);
+  }
+  this.count = -1;
+  this.animationLayer = [];
+
+  var opening = this;
+  this.animationLayer[0] = [Hide(this.animationLayer[0], this.title[0], 0)];
+  this.animationLayer[0].push(Down(this.animationLayer[0], this.title[0], 50, 500));
+
+  this.animationLayer[1] = [Hide(this.animationLayer[1], this.title[1], 0)];
+  this.animationLayer[1].push(Down(this.animationLayer[1], this.title[1], 150, 500));
+
+  this.animationLayer[2] = [Hide(this.animationLayer[2], this.title[2], 0)];
+  this.animationLayer[2].push(FadeIn(this.animationLayer[2], this.title[2], 250, 500));
+
+  // Opening Functions
+  function generateTitleText(title){
+    var returnArray = [];
+    var middleIndex = (title.text.length-1)/2;
+    for(var i = 0 ; i < title.text.length ; i++){
+      var text = new TextObject();
+      var data = {
+        x : title.x + title.space * (i-middleIndex),
+        y : title.y,
+        size: title.size,
+        font: "'Press Start 2P'",
+        textBaseline: "middle",
+        textAlign: "center",
+        lineWidth: title.lineWidth,
+        message: title.text[i],
+        color: {fill:undefined, stroke:undefined},
+        colorData: {
+          default: title.color
+        }
+      };
+      text.initialize(canvas,ctx,GAME_SETTINGS,{
+        text : data,
+        default : data
+      });
+      returnArray.push(text);
+    }
+    return returnArray;
+  }
+
+  function Down(animationLayer, title, startCount, endCount){
+    var actionData = [];
+    return function closure(){
+      if(opening.count == startCount){
+        for(var i = 0 ; i < title.length ; i++){
+          title[i].data.text = clone(title[i].data.default);
+          title[i].data.text.y = title[i].data.text.y-40;
+          title[i].data.text.globalAlpha = 0.0;
+          actionData[i] = {startCount: startCount+i*15, speed: 1};
+        }
+      }
+      if(opening.count >= startCount && opening.count < endCount ){
+        for(var i = 0 ; i < title.length ; i++){
+          if(opening.count >= actionData[i].startCount && title[i].data.text.y<title[i].data.default.y){
+            actionData[i].speed = (title[i].data.default.y-title[i].data.text.y)/40+0.3;
+            title[i].data.text.y = title[i].data.text.y+ actionData[i].speed;
+            if(title[i].data.text.globalAlpha < 1){
+              title[i].data.text.globalAlpha += 0.1;
+            }else{
+              title[i].data.text.globalAlpha += 1;
+            };
+          }
+        }
+      }
+      if(endCount && opening.count == endCount){
+        for(var i = 0 ; i < title.length ; i++){
+          title[i].data.text = clone(title[i].data.default);
+        }
+        var index = animationLayer.indexOf(closure);
+        animationLayer.splice(0,index+1);
+      }
+    }
+  }
+
+  function Hide(animationLayer, title, startCount, endCount){
+    var data;
+    return function closure(){
+      if(opening.count == startCount){
+        for(var i = 0 ; i < title.length ; i++){
+          title[i].data.text = clone(title[i].data.default);
+          title[i].data.text.globalAlpha=0;
+        }
+      }
+      if(endCount && opening.count == endCount){
+        for(var i = 0 ; i < title.length ; i++){
+          title[i].data.text = clone(title[i].data.default);
+        }
+        var index = animationLayer.indexOf(closure);
+        animationLayer.splice(0,index+1);
+      }
+    }
+  }
+
+  function FadeIn(animationLayer, title, startCount, endCount){
+    var actionData = [];
+    return function closure(){
+      if(opening.count == startCount){
+        for(var i = 0 ; i < title.length ; i++){
+          title[i].data.text = clone(title[i].data.default);
+          title[i].data.text.globalAlpha = 0.0;
+          actionData[i] = {startCount: startCount+i*15, speed: 1};
+        }
+      }
+      if(opening.count >= startCount && opening.count < endCount ){
+        for(var i = 0 ; i < title.length ; i++){
+          if(opening.count >= actionData[i].startCount){
+
+            if(title[i].data.text.globalAlpha < 1){
+              title[i].data.text.globalAlpha += 0.1;
+            }else{
+              title[i].data.text.globalAlpha += 1;
+            };
+          }
+        }
+      }
+      if(endCount && opening.count == endCount){
+        for(var i = 0 ; i < title.length ; i++){
+          title[i].data.text = clone(title[i].data.default);
+        }
+        var index = animationLayer.indexOf(closure);
+        animationLayer.splice(0,index+1);
+      }
+    }
+  }
+}
+Opening.prototype.update = function(){
+  var count = this.count++;
+  this.animationLayer.forEach(function(animationLayer){
+    animationLayer.forEach(function(action){
+      action();
+    });
+  });
+}
+Opening.prototype.draw = function(){
+  var ctx = this.ctx;
+  this.title.forEach(function(title){
+    title.forEach(function(char){
+      drawText(ctx, char.data.text);
+    });
+  });
+}
 
 //Common Functions
 function pointSquareCollusionCheck(x,y,square){
@@ -633,8 +813,10 @@ function drawText(ctx, text){
     ctx.fillStyle = text.color.fill;
     ctx.fillText(text.message, text.x, text.y);
   }
-
   ctx.restore();
+}
+function clone (object){
+  return JSON.parse(JSON.stringify(object))
 }
 </script>
   </body>

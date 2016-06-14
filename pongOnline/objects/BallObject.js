@@ -89,11 +89,13 @@ Ball.prototype.update = function(room){
       room.objects[this.playerIds[1]].score++;
       this.serve= new Serve(this.playerIds[0]);
       ball.color.fill = "#000000";
+      this.boostCount = 0;
     }
     if(ball.x >= SETTINGS.WIDTH + ball.width*2){
       room.objects[this.playerIds[0]].score++;
       this.serve= new Serve(this.playerIds[1]);
       ball.color.fill = "#000000";
+      this.boostCount = 0;
     }
     if(ball.y - ball.height/2 <= 0 + SETTINGS.BORDER_WIDTH){
       this.dynamic = bounce(0,this.dynamic.angle);
