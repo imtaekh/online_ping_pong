@@ -40,6 +40,7 @@ $(function(){
     waiting.destroy();
     ready.initialize(position);
   });
+
   socket.on('playing', function(position){
     ready.destroy();
     playing.initialize();
@@ -53,6 +54,10 @@ $(function(){
     ready.destroy();
     playing.destroy();
     backToTitle.initialize(message);
+  });
+
+  socket.on('playSound', function(sound){
+    (new Audio('/wavs/'+sound+'.wav')).play();
   });
 
   function drawObjects(status){

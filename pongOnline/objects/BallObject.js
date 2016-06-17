@@ -99,16 +99,21 @@ Ball.prototype.update = function(room){
     }
     if(ball.y - ball.height/2 <= 0 + SETTINGS.BORDER_WIDTH){
       this.dynamic = bounce(0,this.dynamic.angle);
+      room.sounds.push("pong001");
     }
 
     if(ball.y + ball.height/2 >= SETTINGS.HEIGHT - SETTINGS.BORDER_WIDTH){
       this.dynamic = bounce(0,this.dynamic.angle);
+      room.sounds.push("pong001");
     }
 
     for(object in room.objects){
       if(room.objects[object].role == "player"){
         playerStat = room.objects[object].status.rect;
         var collusionType = ballCollusionCheck(ball, playerStat, this.dynamic.angle);
+        if(collusionType != COLLUSION_TYPE.NO_COLLUSION){
+          room.sounds.push("pong001");
+        }
 
         switch(collusionType){
           case COLLUSION_TYPE.NO_COLLUSION:

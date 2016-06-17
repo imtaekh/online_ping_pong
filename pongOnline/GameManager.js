@@ -7,7 +7,7 @@ function GameManager(io, roomManager){
   GmMg.update = setInterval(function(){
     for(var roomId in GmMg.RmMg.rooms){
       var room = GmMg.RmMg.rooms[roomId];
-      room.loop(room);
+      room.runLoop(room);
     }
   },INTERVAL);
 }
