@@ -61,7 +61,6 @@ function Room(RmMg, io, id, socket0, socket1) {
   room.loop = function(){};
   room.playsounds = function(){
     if(room.sounds.length > 0 ){
-      console.log(room.sounds);
       io.to(room.id).emit('playSound', room.sounds.pop());
     }
   };

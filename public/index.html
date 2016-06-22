@@ -759,6 +759,39 @@ Opening.prototype.initialize = function(canvas,ctx,GAME_SETTINGS){
       }
     }
   }
+  this.drawOpeningBackground = (function(){
+
+    var bgWidth = 512;
+    var bgHeight = 178;
+    var xOffset = 0;
+    var yOffset = 0;
+    return function(){
+      xOffset++;
+      yOffset++;
+      if(xOffset>bgWidth) xOffset = 0;
+      if(yOffset>bgHeight) yOffset = 0;
+
+      var backgroundPatten = document.createElement('canvas');
+      backgroundPatten.width = bgWidth;
+      backgroundPatten.height = bgHeight;
+
+      var texture = new Image();
+      texture.src = "img/background001.png";
+
+      var PattenCtx = backgroundPatten.getContext("2d");
+      PattenCtx.drawImage(texture,xOffset-bgWidth,yOffset-bgHeight);
+      PattenCtx.drawImage(texture,xOffset-bgWidth,yOffset);
+      PattenCtx.drawImage(texture,xOffset,yOffset-bgHeight);
+      PattenCtx.drawImage(texture,xOffset,yOffset);
+
+      var pat = ctx.createPattern(backgroundPatten,"repeat");
+
+      ctx.save();
+      ctx.fillStyle = pat;
+      ctx.fillRect(0,0,GAME_SETTINGS.WIDTH,GAME_SETTINGS.HEIGHT);
+      ctx.restore();
+    }
+  })();
 }
 Opening.prototype.update = function(){
   var count = this.count++;
@@ -770,6 +803,7 @@ Opening.prototype.update = function(){
 }
 Opening.prototype.draw = function(){
   var ctx = this.ctx;
+  this.drawOpeningBackground();
   this.title.forEach(function(title){
     title.forEach(function(char){
       drawText(ctx, char.data.text);
