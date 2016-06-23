@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Ping-Pong Online</title>
+    <title>SMASH PONG ONLINE</title>
   </head>
   <body>
     <script src="/socket.io/socket.io.js"></script>
@@ -35,6 +35,12 @@ $(function(){
     document.body.appendChild(canvas);
     start.initialize();
   });
+  socket.on('new user entered', function(){
+    (new Audio('/wav/notification001.wav')).play();
+  })
+  socket.on('total user count updated', function(count){
+    window.document.title = GAME_SETTINGS.TITLE+" ("+count+")";
+  });
 
   socket.on('ready', function(position){
     waiting.destroy();
@@ -57,7 +63,7 @@ $(function(){
   });
 
   socket.on('playSound', function(sound){
-    (new Audio('/wavs/'+sound+'.wav')).play();
+    (new Audio('/wav/'+sound+'.wav')).play();
   });
 
   function drawObjects(status){

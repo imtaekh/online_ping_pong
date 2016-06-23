@@ -18,8 +18,10 @@ var roomManager = new (require('./pongOnline/RoomManager.js'))(io);
 var gameManager = new (require('./pongOnline/GameManager.js'))(io, roomManager);
 
 io.on('connection', function(socket){
-  io.to(socket.id).emit('connected', SETTINGS.CLIENT_SETTINGS);
   console.log('user connected: ', socket.id);
+  io.to(socket.id).emit('connected', SETTINGS.CLIENT_SETTINGS);
+  socket.broadcast.emit('new user entered');
+  io.emit('total user count updated', socket.server.eio.clientsCount);
 
   socket.on('waiting', function(){
     //console.log('waiting from '+socket.id);
@@ -31,6 +33,7 @@ io.on('connection', function(socket){
     if(roomIndex) roomManager.destroy(roomIndex);
     lobbyManager.kick(socket);
     console.log('user disconnected: ', socket.id);
+    io.emit('total user count updated', socket.server.eio.clientsCount);
   });
   socket.on('keydown', function(keyCode){
     var roomIndex = roomManager.roomIndex[socket.id];
